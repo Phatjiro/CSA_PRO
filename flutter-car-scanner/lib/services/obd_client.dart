@@ -14,10 +14,16 @@ class ObdClient {
       StreamController<ObdLiveData>.broadcast();
   Timer? _pollTimer;
   final StringBuffer _buffer = StringBuffer();
+  Timer? _idleTimer;
+  Completer<void>? _idleCompleter;
 
   ObdClient({required this.host, required this.port});
 
   Stream<ObdLiveData> get dataStream => _dataController.stream;
+
+  Future<String> requestPid(String pid) async {
+    return _sendAndRead(pid);
+  }
 
   Future<void> connect() async {
     _socket = await Socket.connect(host, port, timeout: const Duration(seconds: 5));
@@ -57,13 +63,22 @@ class ObdClient {
   void _onData(Uint8List bytes) {
     final chunk = utf8.decode(bytes);
     _buffer.write(chunk);
+    _idleTimer?.cancel();
+    _idleTimer = Timer(const Duration(milliseconds: 40), () {
+      _idleCompleter?.complete();
+      _idleCompleter = null;
+    });
   }
 
   Future<String> _sendAndRead(String cmd) async {
     _buffer.clear();
     await _writeCommand(cmd);
-    // Wait a short time for response to accumulate
-    await Future<void>.delayed(const Duration(milliseconds: 80));
+    // Chờ đến khi không còn dữ liệu mới (idle) hoặc timeout
+    _idleCompleter = Completer<void>();
+    await Future.any([
+      _idleCompleter!.future,
+      Future<void>.delayed(const Duration(milliseconds: 300)),
+    ]);
     final text = _buffer.toString();
     // ELM responses may contain '>' prompt; strip
     return text.replaceAll('>', '').trim();
@@ -78,12 +93,20 @@ class ObdClient {
       final rpm = _parseRpm(rpmHex);
       final speed = _parseSpeed(speedHex);
       final ect = _parseCoolantTemp(ectHex);
+      final iat = _parseIntakeTemp(await _sendAndRead('010F'));
+      final thr = _parseThrottle(await _sendAndRead('0111'));
+      final fuel = _parseFuel(await _sendAndRead('012F'));
 
-      _dataController.add(ObdLiveData(
-        engineRpm: rpm,
-        vehicleSpeedKmh: speed,
-        coolantTempC: ect,
-      ));
+      final current = ObdLiveData(
+        engineRpm: rpm == 0 && _likelyInvalid(rpmHex) ? (_last?.engineRpm ?? 0) : rpm,
+        vehicleSpeedKmh: speed == 0 && _likelyInvalid(speedHex) ? (_last?.vehicleSpeedKmh ?? 0) : speed,
+        coolantTempC: ect == 0 && _likelyInvalid(ectHex) ? (_last?.coolantTempC ?? 0) : ect,
+        intakeTempC: iat,
+        throttlePositionPercent: thr,
+        fuelLevelPercent: fuel,
+      );
+      _last = current;
+      _dataController.add(current);
     } catch (_) {
       // ignore transient parsing/transport errors
     }
@@ -130,6 +153,45 @@ class ObdClient {
       return v - 40;
     }
     return 0;
+  }
+
+  static int _parseIntakeTemp(String response) {
+    // 41 0F VV ; TempC = VV - 40
+    final cleaned = response.replaceAll(RegExp(r"\s+"), '');
+    final i = cleaned.indexOf('410F');
+    if (i >= 0 && cleaned.length >= i + 6) {
+      final v = int.parse(cleaned.substring(i + 4, i + 6), radix: 16);
+      return v - 40;
+    }
+    return 0;
+  }
+
+  static int _parseThrottle(String response) {
+    // 41 11 VV ; percent = 100*VV/255
+    final cleaned = response.replaceAll(RegExp(r"\s+"), '');
+    final i = cleaned.indexOf('4111');
+    if (i >= 0 && cleaned.length >= i + 6) {
+      final v = int.parse(cleaned.substring(i + 4, i + 6), radix: 16);
+      return ((v * 100) / 255).round();
+    }
+    return 0;
+  }
+
+  static int _parseFuel(String response) {
+    // 41 2F VV ; percent = 100*VV/255
+    final cleaned = response.replaceAll(RegExp(r"\s+"), '');
+    final i = cleaned.indexOf('412F');
+    if (i >= 0 && cleaned.length >= i + 6) {
+      final v = int.parse(cleaned.substring(i + 4, i + 6), radix: 16);
+      return ((v * 100) / 255).round();
+    }
+    return 0;
+  }
+
+  ObdLiveData? _last;
+  bool _likelyInvalid(String response) {
+    final t = response.replaceAll(RegExp(r"\s+"), '');
+    return t.isEmpty || t.length < 6;
   }
 }
 

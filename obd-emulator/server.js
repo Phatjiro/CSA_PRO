@@ -40,6 +40,7 @@ let emulatorConfig = {
 
 // OBD PIDs và responses (theo chuẩn SAE J1979)
 const obdPids = {
+  '0101': '41 01 00 07 25 A0', // Readiness since DTC clear (MIL off, some monitors not completed)
   '0100': '41 00 98 1B A0 13', // Supported PIDs 01-20
   '0105': '41 05 7B', // Engine Coolant Temperature (83°C)
   '010C': '41 0C 1F 40', // Engine RPM (2000 RPM)
