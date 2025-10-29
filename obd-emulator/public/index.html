@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OBD ELM327 Emulator</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <div class="header-left">
+                <i class="fas fa-car"></i>
+                <h1>OBD ELM327 Emulator</h1>
+            </div>
+            <div class="header-right">
+                <div class="status-indicator" id="statusIndicator">
+                    <span class="status-dot"></span>
+                    <span id="statusText">Disconnected</span>
+                </div>
+                <div class="time" id="currentTime">11:09</div>
+                <div class="battery">100%</div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Left Panel - Configuration -->
+            <div class="left-panel">
+                <div class="panel-header">
+                    <h2>Simulator Settings</h2>
+                </div>
+                
+                <div class="config-section">
+                    <div class="config-group">
+                        <label for="elmName">ELM name:</label>
+                        <input type="text" id="elmName" value="ELM327">
+                    </div>
+                    
+                    <div class="config-group">
+                        <label for="elmVersion">ELM version:</label>
+                        <input type="text" id="elmVersion" value="v1.2">
+                    </div>
+                    
+                    <div class="config-group">
+                        <label for="deviceId">Device ID:</label>
+                        <input type="text" id="deviceId" value="ELM327">
+                    </div>
+                    
+                    <div class="config-group">
+                        <label for="vinCode">VIN code:</label>
+                        <input type="text" id="vinCode" value="WAUBFGFFXF1001572">
+                    </div>
+                    
+                    <div class="config-group">
+                        <label for="ecuCount">ECU count:</label>
+                        <div class="ecu-controls">
+                            <button id="ecuMinus" class="btn-small">-</button>
+                            <input type="number" id="ecuCount" value="2" min="1" max="10">
+                            <button id="ecuPlus" class="btn-small">+</button>
+                        </div>
+                    </div>
+                    
+                    <div class="config-group">
+                        <label for="server">Server:</label>
+                        <input type="text" id="server" value="192.168.1.76" class="server-input">
+                    </div>
+                    
+                    <div class="config-group">
+                        <label for="port">Port:</label>
+                        <input type="number" id="port" value="35000" min="1000" max="65535">
+                    </div>
+                </div>
+
+                <!-- Toggle Switches -->
+                <div class="toggle-section">
+                    <h3>Settings</h3>
+                    <div class="toggle-grid">
+                        <div class="toggle-item">
+                            <label class="toggle-label">
+                                <input type="checkbox" id="echo" class="toggle-input">
+                                <span class="toggle-slider"></span>
+                                <span class="toggle-text">Echo</span>
+                            </label>
+                        </div>
+                        
+                        <div class="toggle-item">
+                            <label class="toggle-label">
+                                <input type="checkbox" id="headers" class="toggle-input" checked>
+                                <span class="toggle-slider"></span>
+                                <span class="toggle-text">Headers</span>
+                            </label>
+                        </div>
+                        
+                        <div class="toggle-item">
+                            <label class="toggle-label">
+                                <input type="checkbox" id="dlc" class="toggle-input">
+                                <span class="toggle-slider"></span>
+                                <span class="toggle-text">DLC</span>
+                            </label>
+                        </div>
+                        
+                        <div class="toggle-item">
+                            <label class="toggle-label">
+                                <input type="checkbox" id="lineFeed" class="toggle-input">
+                                <span class="toggle-slider"></span>
+                                <span class="toggle-text">Line feed</span>
+                            </label>
+                        </div>
+                        
+                        <div class="toggle-item">
+                            <label class="toggle-label">
+                                <input type="checkbox" id="spaces" class="toggle-input" checked>
+                                <span class="toggle-slider"></span>
+                                <span class="toggle-text">Spaces</span>
+                            </label>
+                        </div>
+                        
+                        <div class="toggle-item">
+                            <label class="toggle-label">
+                                <input type="checkbox" id="doubleLF" class="toggle-input">
+                                <span class="toggle-slider"></span>
+                                <span class="toggle-text">Double LF</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Control Buttons -->
+                <div class="control-buttons">
+                    <button id="startBtn" class="btn btn-primary">
+                        <i class="fas fa-play"></i>
+                        Start Server
+                    </button>
+                    <button id="stopBtn" class="btn btn-danger" disabled>
+                        <i class="fas fa-stop"></i>
+                        Stop Server
+                    </button>
+                    <button id="resetBtn" class="btn btn-secondary">
+                        <i class="fas fa-refresh"></i>
+                        Reset
+                    </button>
+                </div>
+            </div>
+
+            <!-- Right Panel - Live Data & Logs -->
+            <div class="right-panel">
+                <!-- Live Data Section -->
+                <div class="live-data-section">
+                    <div class="section-header">
+                        <h2>Live Data</h2>
+                        <div class="connection-info">
+                            <span id="connectedClients">0</span> clients connected
+                        </div>
+                    </div>
+                    
+                    <div class="live-data-grid">
+                        <div class="data-card">
+                            <div class="data-value" id="engineRPM">0</div>
+                            <div class="data-label">Engine RPM</div>
+                            <div class="data-bar">
+                                <div class="data-progress" id="rpmBar"></div>
+                            </div>
+                        </div>
+                        
+                        <div class="data-card">
+                            <div class="data-value" id="vehicleSpeed">0</div>
+                            <div class="data-label">Speed (km/h)</div>
+                            <div class="data-bar">
+                                <div class="data-progress" id="speedBar"></div>
+                            </div>
+                        </div>
+                        
+                        <div class="data-card">
+                            <div class="data-value" id="coolantTemp">0</div>
+                            <div class="data-label">Coolant Temp (°C)</div>
+                            <div class="data-bar">
+                                <div class="data-progress" id="coolantBar"></div>
+                            </div>
+                        </div>
+                        
+                        <div class="data-card">
+                            <div class="data-value" id="intakeTemp">0</div>
+                            <div class="data-label">Intake Temp (°C)</div>
+                            <div class="data-bar">
+                                <div class="data-progress" id="intakeBar"></div>
+                            </div>
+                        </div>
+                        
+                        <div class="data-card">
+                            <div class="data-value" id="throttlePosition">0</div>
+                            <div class="data-label">Throttle Position (%)</div>
+                            <div class="data-bar">
+                                <div class="data-progress" id="throttleBar"></div>
+                            </div>
+                        </div>
+                        
+                        <div class="data-card">
+                            <div class="data-value" id="fuelLevel">0</div>
+                            <div class="data-label">Fuel Level (%)</div>
+                            <div class="data-bar">
+                                <div class="data-progress" id="fuelBar"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Log Section -->
+                <div class="log-section">
+                    <div class="section-header">
+                        <h2>Communication Log</h2>
+                        <button id="clearLogBtn" class="btn btn-small">
+                            <i class="fas fa-trash"></i>
+                            Clear
+                        </button>
+                    </div>
+                    
+                    <div class="log-container" id="logContainer">
+                        <div class="log-entry">
+                            <span class="log-time">11:09:15</span>
+                            <span class="log-type">INFO</span>
+                            <span class="log-message">OBD ELM327 Emulator started</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
