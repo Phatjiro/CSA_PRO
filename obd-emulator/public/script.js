@@ -41,6 +41,55 @@ const elements = {
     intakeTemp: document.getElementById('intakeTemp'),
     throttlePosition: document.getElementById('throttlePosition'),
     fuelLevel: document.getElementById('fuelLevel'),
+    engineLoad: document.getElementById('engineLoad'),
+    map: document.getElementById('map'),
+    baro: document.getElementById('baro'),
+    maf: document.getElementById('maf'),
+    voltage: document.getElementById('voltage'),
+    ambient: document.getElementById('ambient'),
+    lambda: document.getElementById('lambda'),
+    fuelSystemStatus: document.getElementById('fuelSystemStatus'),
+    timingAdvance: document.getElementById('timingAdvance'),
+    runtimeSinceStart: document.getElementById('runtimeSinceStart'),
+    distanceWithMIL: document.getElementById('distanceWithMIL'),
+    commandedPurge: document.getElementById('commandedPurge'),
+    warmupsSinceClear: document.getElementById('warmupsSinceClear'),
+    distanceSinceClear: document.getElementById('distanceSinceClear'),
+    catalystTemp: document.getElementById('catalystTemp'),
+    absoluteLoad: document.getElementById('absoluteLoad'),
+    commandedEquivRatio: document.getElementById('commandedEquivRatio'),
+    relativeThrottle: document.getElementById('relativeThrottle'),
+    absoluteThrottleB: document.getElementById('absoluteThrottleB'),
+    absoluteThrottleC: document.getElementById('absoluteThrottleC'),
+    pedalPositionD: document.getElementById('pedalPositionD'),
+    pedalPositionE: document.getElementById('pedalPositionE'),
+    pedalPositionF: document.getElementById('pedalPositionF'),
+    commandedThrottleActuator: document.getElementById('commandedThrottleActuator'),
+    timeRunWithMIL: document.getElementById('timeRunWithMIL'),
+    timeSinceCodesCleared: document.getElementById('timeSinceCodesCleared'),
+    maxEquivRatio: document.getElementById('maxEquivRatio'),
+    maxAirFlow: document.getElementById('maxAirFlow'),
+    fuelType: document.getElementById('fuelType'),
+    ethanolFuel: document.getElementById('ethanolFuel'),
+    absEvapPressure: document.getElementById('absEvapPressure'),
+    evapPressure: document.getElementById('evapPressure'),
+    shortTermO2Trim1: document.getElementById('shortTermO2Trim1'),
+    longTermO2Trim1: document.getElementById('longTermO2Trim1'),
+    shortTermO2Trim2: document.getElementById('shortTermO2Trim2'),
+    longTermO2Trim2: document.getElementById('longTermO2Trim2'),
+    shortTermO2Trim3: document.getElementById('shortTermO2Trim3'),
+    longTermO2Trim3: document.getElementById('longTermO2Trim3'),
+    shortTermO2Trim4: document.getElementById('shortTermO2Trim4'),
+    longTermO2Trim4: document.getElementById('longTermO2Trim4'),
+    catalystTemp1: document.getElementById('catalystTemp1'),
+    catalystTemp2: document.getElementById('catalystTemp2'),
+    catalystTemp3: document.getElementById('catalystTemp3'),
+    catalystTemp4: document.getElementById('catalystTemp4'),
+    fuelPressure: document.getElementById('fuelPressure'),
+    shortTermFuelTrim1: document.getElementById('shortTermFuelTrim1'),
+    longTermFuelTrim1: document.getElementById('longTermFuelTrim1'),
+    shortTermFuelTrim2: document.getElementById('shortTermFuelTrim2'),
+    longTermFuelTrim2: document.getElementById('longTermFuelTrim2'),
     
     // Progress bars
     rpmBar: document.getElementById('rpmBar'),
@@ -292,12 +341,64 @@ function updateStatus(isRunning) {
 // Update live data
 function updateLiveData(data) {
     // Update values with animation
+    // Core metrics
     updateDataValue(elements.engineRPM, data.engineRPM);
     updateDataValue(elements.vehicleSpeed, data.vehicleSpeed);
     updateDataValue(elements.coolantTemp, data.coolantTemp);
     updateDataValue(elements.intakeTemp, data.intakeTemp);
     updateDataValue(elements.throttlePosition, data.throttlePosition);
     updateDataValue(elements.fuelLevel, data.fuelLevel);
+    updateDataValue(elements.engineLoad, data.engineLoad ?? 0);
+    updateDataValue(elements.map, data.map ?? 0);
+    updateDataValue(elements.baro, data.baro ?? 0);
+    updateDataValue(elements.maf, data.maf ?? 0);
+    updateDataValue(elements.voltage, data.voltage ?? 0);
+    updateDataValue(elements.ambient, data.ambient ?? 0);
+    updateDataValue(elements.lambda, data.lambda ?? 0);
+    
+    // Additional metrics
+    updateDataValue(elements.fuelSystemStatus, data.fuelSystemStatus ?? 0);
+    updateDataValue(elements.timingAdvance, data.timingAdvance ?? 0);
+    updateDataValue(elements.runtimeSinceStart, data.runtimeSinceStart ?? 0);
+    updateDataValue(elements.distanceWithMIL, data.distanceWithMIL ?? 0);
+    updateDataValue(elements.commandedPurge, data.commandedPurge ?? 0);
+    updateDataValue(elements.warmupsSinceClear, data.warmupsSinceClear ?? 0);
+    updateDataValue(elements.distanceSinceClear, data.distanceSinceClear ?? 0);
+    updateDataValue(elements.catalystTemp, data.catalystTemp ?? 0);
+    updateDataValue(elements.absoluteLoad, data.absoluteLoad ?? 0);
+    updateDataValue(elements.commandedEquivRatio, data.commandedEquivRatio ?? 0);
+    updateDataValue(elements.relativeThrottle, data.relativeThrottle ?? 0);
+    updateDataValue(elements.absoluteThrottleB, data.absoluteThrottleB ?? 0);
+    updateDataValue(elements.absoluteThrottleC, data.absoluteThrottleC ?? 0);
+    updateDataValue(elements.pedalPositionD, data.pedalPositionD ?? 0);
+    updateDataValue(elements.pedalPositionE, data.pedalPositionE ?? 0);
+    updateDataValue(elements.pedalPositionF, data.pedalPositionF ?? 0);
+    updateDataValue(elements.commandedThrottleActuator, data.commandedThrottleActuator ?? 0);
+    updateDataValue(elements.timeRunWithMIL, data.timeRunWithMIL ?? 0);
+    updateDataValue(elements.timeSinceCodesCleared, data.timeSinceCodesCleared ?? 0);
+    updateDataValue(elements.maxEquivRatio, data.maxEquivRatio ?? 0);
+    updateDataValue(elements.maxAirFlow, data.maxAirFlow ?? 0);
+    updateDataValue(elements.fuelType, data.fuelType ?? 0);
+    updateDataValue(elements.ethanolFuel, data.ethanolFuel ?? 0);
+    updateDataValue(elements.absEvapPressure, data.absEvapPressure ?? 0);
+    updateDataValue(elements.evapPressure, data.evapPressure ?? 0);
+    updateDataValue(elements.shortTermO2Trim1, data.shortTermO2Trim1 ?? 0);
+    updateDataValue(elements.longTermO2Trim1, data.longTermO2Trim1 ?? 0);
+    updateDataValue(elements.shortTermO2Trim2, data.shortTermO2Trim2 ?? 0);
+    updateDataValue(elements.longTermO2Trim2, data.longTermO2Trim2 ?? 0);
+    updateDataValue(elements.shortTermO2Trim3, data.shortTermO2Trim3 ?? 0);
+    updateDataValue(elements.longTermO2Trim3, data.longTermO2Trim3 ?? 0);
+    updateDataValue(elements.shortTermO2Trim4, data.shortTermO2Trim4 ?? 0);
+    updateDataValue(elements.longTermO2Trim4, data.longTermO2Trim4 ?? 0);
+    updateDataValue(elements.catalystTemp1, data.catalystTemp1 ?? 0);
+    updateDataValue(elements.catalystTemp2, data.catalystTemp2 ?? 0);
+    updateDataValue(elements.catalystTemp3, data.catalystTemp3 ?? 0);
+    updateDataValue(elements.catalystTemp4, data.catalystTemp4 ?? 0);
+    updateDataValue(elements.fuelPressure, data.fuelPressure ?? 0);
+    updateDataValue(elements.shortTermFuelTrim1, data.shortTermFuelTrim1 ?? 0);
+    updateDataValue(elements.longTermFuelTrim1, data.longTermFuelTrim1 ?? 0);
+    updateDataValue(elements.shortTermFuelTrim2, data.shortTermFuelTrim2 ?? 0);
+    updateDataValue(elements.longTermFuelTrim2, data.longTermFuelTrim2 ?? 0);
     
     // Update progress bars
     updateProgressBar(elements.rpmBar, data.engineRPM, 0, 8000);

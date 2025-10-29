@@ -5,6 +5,7 @@ import 'dashboard_screen.dart';
 import '../services/connection_manager.dart';
 import 'acceleration_tests_screen.dart';
 import 'emission_tests_screen.dart';
+import 'live_data_select_screen.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -56,6 +57,17 @@ class HomeScreen extends StatelessWidget {
                       }
                       Navigator.of(context).push(
                         MaterialPageRoute(builder: (_) => DashboardScreen(client: client)),
+                      );
+                    } else if (items[index].title.startsWith('Live data')) {
+                      final client = ConnectionManager.instance.client;
+                      if (client == null) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Chưa kết nối. Hãy CONNECT trước.')),
+                        );
+                        return;
+                      }
+                      Navigator.of(context).push(
+                        MaterialPageRoute(builder: (_) => const LiveDataSelectScreen()),
                       );
                     } else if (items[index].title.startsWith('Acceleration')) {
                       final client = ConnectionManager.instance.client;

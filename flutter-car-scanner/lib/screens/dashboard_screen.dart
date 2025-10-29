@@ -4,7 +4,8 @@ import 'package:syncfusion_flutter_gauges/gauges.dart';
 import '../models/obd_live_data.dart';
 import '../services/obd_client.dart';
 
-enum Metric { rpm, speed, coolant, intake, throttle, fuel }
+enum Metric { rpm, speed, coolant, intake, throttle, fuel, load, map, baro, maf, voltage, ambient, lambda }
+enum PageLayout { large, grid6, grid9 }
 
 class DashboardScreen extends StatefulWidget {
   final ObdClient client;
@@ -22,12 +23,23 @@ class _DashboardScreenState extends State<DashboardScreen> {
     intakeTempC: 0,
     throttlePositionPercent: 0,
     fuelLevelPercent: 0,
+    engineLoadPercent: 0,
+    mapKpa: 0,
+    baroKpa: 0,
+    mafGs: 0,
+    voltageV: 0,
+    ambientTempC: 0,
+    lambda: 0,
   );
 
   final ValueNotifier<int> _page = ValueNotifier<int>(0);
-  // Selections: exactly 3 metrics per page
+  // Selections per page
   List<Metric> page1 = const [Metric.rpm, Metric.speed, Metric.coolant];
   List<Metric> page2 = const [Metric.intake, Metric.throttle, Metric.fuel];
+  List<Metric> page3 = const [Metric.load, Metric.map, Metric.maf];
+  PageLayout page1Layout = PageLayout.large; // big RPM + 2 tiles
+  PageLayout page2Layout = PageLayout.grid9;  // 3x3 grid (max 9)
+  PageLayout page3Layout = PageLayout.grid9;  // 3x3 grid (max 9)
 
   @override
   void initState() {
@@ -70,36 +82,43 @@ class _DashboardScreenState extends State<DashboardScreen> {
         child: PageView(
           onPageChanged: (i) => _page.value = i,
           children: [
-            _pageContent(page1),
-            _pageContent(page2),
+            _pageContent(page1, page1Layout),
+            _pageContent(page2, page2Layout),
+            _pageContent(page3, page3Layout),
           ],
         ),
       ),
     );
   }
 
-  Widget _pageContent(List<Metric> metrics) {
-    // Layout: if contains rpm -> big gauge on top, else two columns
-    final hasRpm = metrics.contains(Metric.rpm);
-    if (hasRpm) {
+  Widget _pageContent(List<Metric> metrics, PageLayout layout) {
+    if (layout == PageLayout.large && metrics.contains(Metric.rpm)) {
       return Column(
         children: [
           Expanded(flex: 2, child: _rpmGauge(_data.engineRpm)),
           Expanded(
             flex: 1,
-            child: Row(children: _smallTiles(metrics.where((m) => m != Metric.rpm).toList())),
+            child: Row(children: _smallTiles(metrics.where((m) => m != Metric.rpm).take(2).toList())),
           ),
         ],
       );
     }
+    if (layout == PageLayout.grid9) {
+      final items = metrics.take(9).toList();
+      return Column(
+        children: [
+          Expanded(child: Row(children: _smallTiles(items.take(3).toList()))),
+          Expanded(child: Row(children: _smallTiles(items.skip(3).take(3).toList()))),
+          Expanded(child: Row(children: _smallTiles(items.skip(6).take(3).toList()))),
+        ],
+      );
+    }
+    // grid6 default
+    final items = metrics.take(6).toList();
     return Column(
       children: [
-        Expanded(
-          child: Row(children: _smallTiles(metrics.take(2).toList())),
-        ),
-        Expanded(
-          child: Row(children: _smallTiles(metrics.skip(2).take(2).toList())),
-        ),
+        Expanded(child: Row(children: _smallTiles(items.take(3).toList()))),
+        Expanded(child: Row(children: _smallTiles(items.skip(3).take(3).toList()))),
       ],
     );
   }
@@ -120,6 +139,20 @@ class _DashboardScreenState extends State<DashboardScreen> {
         return _tile('Throttle', '${_data.throttlePositionPercent}', unit: '%');
       case Metric.fuel:
         return _tile('Fuel level', '${_data.fuelLevelPercent}', unit: '%');
+      case Metric.load:
+        return _tile('Engine load', '${_data.engineLoadPercent}', unit: '%');
+      case Metric.map:
+        return _tile('MAP', '${_data.mapKpa}', unit: 'kPa');
+      case Metric.baro:
+        return _tile('Baro', '${_data.baroKpa}', unit: 'kPa');
+      case Metric.maf:
+        return _tile('MAF', '${_data.mafGs}', unit: 'g/s');
+      case Metric.voltage:
+        return _tile('Voltage', _format1(_data.voltageV), unit: 'V');
+      case Metric.ambient:
+        return _tile('Ambient', '${_data.ambientTempC}', unit: '°C');
+      case Metric.lambda:
+        return _tile('Lambda', _format2(_data.lambda));
       case Metric.rpm:
         return _rpmGauge(_data.engineRpm);
     }
@@ -134,24 +167,22 @@ class _DashboardScreenState extends State<DashboardScreen> {
       ),
       padding: const EdgeInsets.all(16),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          Text(title, style: const TextStyle(fontSize: 16, color: Colors.white70)),
+          Text(title, style: const TextStyle(fontSize: 12, color: Colors.white70)),
           const Spacer(),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Text(value, style: const TextStyle(fontSize: 48, fontWeight: FontWeight.bold)),
-              if (unit != null) ...[
-                const SizedBox(width: 6),
-                Text(unit, style: const TextStyle(fontSize: 16, color: Colors.white70)),
-              ],
-            ],
-          ),
+          Text(value, style: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold)),
+          if (unit != null)
+            Text(unit, style: const TextStyle(fontSize: 12, color: Colors.white70)),
+          const Spacer(),
         ],
       ),
     );
   }
+
+  String _format1(double v) => v.toStringAsFixed(1);
+  String _format2(double v) => v.toStringAsFixed(2);
 
   Widget _rpmGauge(int rpm) {
     return Padding(
@@ -204,6 +235,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     showModalBottomSheet(
       context: context,
       showDragHandle: true,
+      isScrollControlled: true,
       builder: (context) {
         final all = Metric.values;
         final labels = {
@@ -213,76 +245,143 @@ class _DashboardScreenState extends State<DashboardScreen> {
           Metric.intake: 'Intake temp',
           Metric.throttle: 'Throttle position',
           Metric.fuel: 'Fuel level',
+          Metric.load: 'Engine load',
+          Metric.map: 'MAP kPa',
+          Metric.baro: 'Baro kPa',
+          Metric.maf: 'MAF g/s',
+          Metric.voltage: 'Voltage V',
+          Metric.ambient: 'Ambient °C',
+          Metric.lambda: 'Lambda',
         };
 
-        bool selected(List<Metric> list, Metric m) => list.contains(m);
-        void toggle(List<Metric> list, Metric m, VoidCallback refresh) {
-          if (list.contains(m)) {
-            list = list.where((e) => e != m).toList();
-          } else {
-            if (list.length >= 3) return; // limit 3 per page
-            list = [...list, m];
-          }
-          setState(() {
-            if (identical(list, page1)) {
-              page1 = list;
-            }
-          });
-          refresh();
-        }
-
-        return StatefulBuilder(
-          builder: (context, setModalState) {
-            return Padding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Text('Trang 1 (tối đa 3 mục)', style: TextStyle(fontWeight: FontWeight.w600)),
-                  Wrap(
-                    spacing: 8,
-                    children: all
-                        .map((m) => FilterChip(
-                              label: Text(labels[m]!),
-                              selected: page1.contains(m),
-                              onSelected: (v) {
-                                setState(() {
-                                  if (v) {
-                                    if (!page1.contains(m) && page1.length < 3) page1 = [...page1, m];
-                                  } else {
-                                    page1 = page1.where((e) => e != m).toList();
-                                  }
-                                });
-                                setModalState(() {});
-                              },
-                            ))
-                        .toList(),
+        return DraggableScrollableSheet(
+          initialChildSize: 0.8,
+          minChildSize: 0.5,
+          maxChildSize: 0.95,
+          expand: false,
+          builder: (context, controller) {
+            return StatefulBuilder(
+              builder: (context, setModalState) {
+                return SingleChildScrollView(
+                  controller: controller,
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            const Text('Trang 1', style: TextStyle(fontWeight: FontWeight.w600)),
+                            const SizedBox(width: 12),
+                            DropdownButton<PageLayout>(
+                              value: page1Layout,
+                              onChanged: (v) => setModalState(() => setState(() => page1Layout = v ?? PageLayout.large)),
+                              items: const [
+                                DropdownMenuItem(value: PageLayout.large, child: Text('Large (RPM + 2)')),
+                                DropdownMenuItem(value: PageLayout.grid6, child: Text('Grid 2x3 (6)')),
+                                DropdownMenuItem(value: PageLayout.grid9, child: Text('Grid 3x3 (9)')),
+                              ],
+                            ),
+                          ],
+                        ),
+                        Wrap(
+                          spacing: 8,
+                          children: all
+                              .map((m) => FilterChip(
+                                    label: Text(labels[m]!),
+                                    selected: page1.contains(m),
+                                    onSelected: (v) {
+                                      setState(() {
+                                        final cap = page1Layout == PageLayout.grid9 ? 9 : (page1Layout == PageLayout.grid6 ? 6 : 3);
+                                        if (v) {
+                                          if (!page1.contains(m) && page1.length < cap) page1 = [...page1, m];
+                                        } else {
+                                          page1 = page1.where((e) => e != m).toList();
+                                        }
+                                      });
+                                      setModalState(() {});
+                                    },
+                                  ))
+                              .toList(),
+                        ),
+                        const SizedBox(height: 12),
+                        Row(
+                          children: [
+                            const Text('Trang 2', style: TextStyle(fontWeight: FontWeight.w600)),
+                            const SizedBox(width: 12),
+                            DropdownButton<PageLayout>(
+                              value: page2Layout,
+                              onChanged: (v) => setModalState(() => setState(() => page2Layout = v ?? PageLayout.grid6)),
+                              items: const [
+                                DropdownMenuItem(value: PageLayout.large, child: Text('Large (RPM + 2)')),
+                                DropdownMenuItem(value: PageLayout.grid6, child: Text('Grid 2x3 (6)')),
+                                DropdownMenuItem(value: PageLayout.grid9, child: Text('Grid 3x3 (9)')),
+                              ],
+                            ),
+                          ],
+                        ),
+                        Wrap(
+                          spacing: 8,
+                          children: all
+                              .map((m) => FilterChip(
+                                    label: Text(labels[m] ?? m.name),
+                                    selected: page2.contains(m),
+                                    onSelected: (v) {
+                                      setState(() {
+                                        final cap = page2Layout == PageLayout.grid9 ? 9 : (page2Layout == PageLayout.grid6 ? 6 : 3);
+                                        if (v) {
+                                          if (!page2.contains(m) && page2.length < cap) page2 = [...page2, m];
+                                        } else {
+                                          page2 = page2.where((e) => e != m).toList();
+                                        }
+                                      });
+                                      setModalState(() {});
+                                    },
+                                  ))
+                              .toList(),
+                        ),
+                        const SizedBox(height: 12),
+                        Row(
+                          children: [
+                            const Text('Trang 3', style: TextStyle(fontWeight: FontWeight.w600)),
+                            const SizedBox(width: 12),
+                            DropdownButton<PageLayout>(
+                              value: page3Layout,
+                              onChanged: (v) => setModalState(() => setState(() => page3Layout = v ?? PageLayout.grid6)),
+                              items: const [
+                                DropdownMenuItem(value: PageLayout.large, child: Text('Large (RPM + 2)')),
+                                DropdownMenuItem(value: PageLayout.grid6, child: Text('Grid 2x3 (6)')),
+                                DropdownMenuItem(value: PageLayout.grid9, child: Text('Grid 3x3 (9)')),
+                              ],
+                            ),
+                          ],
+                        ),
+                        Wrap(
+                          spacing: 8,
+                          children: all
+                              .map((m) => FilterChip(
+                                    label: Text(labels[m] ?? m.name),
+                                    selected: page3.contains(m),
+                                    onSelected: (v) {
+                                      setState(() {
+                                        final cap = page3Layout == PageLayout.grid9 ? 9 : (page3Layout == PageLayout.grid6 ? 6 : 3);
+                                        if (v) {
+                                          if (!page3.contains(m) && page3.length < cap) page3 = [...page3, m];
+                                        } else {
+                                          page3 = page3.where((e) => e != m).toList();
+                                        }
+                                      });
+                                      setModalState(() {});
+                                    },
+                                  ))
+                              .toList(),
+                        ),
+                        const SizedBox(height: 12),
+                      ],
+                    ),
                   ),
-                  const SizedBox(height: 12),
-                  const Text('Trang 2 (tối đa 3 mục)', style: TextStyle(fontWeight: FontWeight.w600)),
-                  Wrap(
-                    spacing: 8,
-                    children: all
-                        .map((m) => FilterChip(
-                              label: Text(labels[m]!),
-                              selected: page2.contains(m),
-                              onSelected: (v) {
-                                setState(() {
-                                  if (v) {
-                                    if (!page2.contains(m) && page2.length < 3) page2 = [...page2, m];
-                                  } else {
-                                    page2 = page2.where((e) => e != m).toList();
-                                  }
-                                });
-                                setModalState(() {});
-                              },
-                            ))
-                        .toList(),
-                  ),
-                  const SizedBox(height: 8),
-                ],
-              ),
+                );
+              },
             );
           },
         );
