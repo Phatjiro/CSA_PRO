@@ -4,7 +4,20 @@ import 'package:syncfusion_flutter_gauges/gauges.dart';
 import '../models/obd_live_data.dart';
 import '../services/obd_client.dart';
 
-enum Metric { rpm, speed, coolant, intake, throttle, fuel, load, map, baro, maf, voltage, ambient, lambda }
+enum Metric {
+  // Core
+  rpm, speed, coolant, intake, throttle, fuel, load, map, baro, maf, voltage, ambient, lambda,
+  // Extended
+  fuelSystemStatus, timingAdvance, runtimeSinceStart, distanceWithMIL, commandedPurge,
+  warmupsSinceClear, distanceSinceClear, catalystTemp, absoluteLoad, commandedEquivRatio,
+  relativeThrottle, absoluteThrottleB, absoluteThrottleC, pedalPositionD, pedalPositionE,
+  pedalPositionF, commandedThrottleActuator, timeRunWithMIL, timeSinceCodesCleared,
+  maxEquivRatio, maxAirFlow, fuelType, ethanolFuel, absEvapPressure, evapPressure,
+  shortTermO2Trim1, longTermO2Trim1, shortTermO2Trim2, longTermO2Trim2,
+  shortTermO2Trim3, longTermO2Trim3, shortTermO2Trim4, longTermO2Trim4,
+  catalystTemp1, catalystTemp2, catalystTemp3, catalystTemp4, fuelPressure,
+  shortTermFuelTrim1, longTermFuelTrim1, shortTermFuelTrim2, longTermFuelTrim2,
+}
 enum PageLayout { large, grid6, grid9 }
 
 class DashboardScreen extends StatefulWidget {
@@ -89,16 +102,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
     Metric.ambient,
     Metric.lambda,
   ];
+  // Page 3: extended metrics (tránh trùng Page 2)
   List<Metric> page3 = const [
-    Metric.map,
     Metric.baro,
-    Metric.maf,
-    Metric.fuel,
-    Metric.throttle,
-    Metric.load,
-    Metric.voltage,
-    Metric.ambient,
-    Metric.lambda,
+    Metric.timingAdvance,
+    Metric.fuelPressure,
+    Metric.catalystTemp,
+    Metric.commandedEquivRatio,
+    Metric.relativeThrottle,
+    Metric.runtimeSinceStart,
+    Metric.distanceSinceClear,
+    Metric.timeSinceCodesCleared,
   ];
   PageLayout page1Layout = PageLayout.large; // big RPM + 2 tiles
   PageLayout page2Layout = PageLayout.grid9;  // 3x3 grid (max 9)
@@ -223,6 +237,91 @@ class _DashboardScreenState extends State<DashboardScreen> {
         return _tile('Lambda', _format2(_data.lambda));
       case Metric.rpm:
         return _rpmGauge(_data.engineRpm);
+      // Extended mappings
+      case Metric.fuelSystemStatus:
+        return _tile('Fuel system status', '${_data.fuelSystemStatus}');
+      case Metric.timingAdvance:
+        return _tile('Timing advance', '${_data.timingAdvance}', unit: '°');
+      case Metric.runtimeSinceStart:
+        return _tile('Runtime since start', '${_data.runtimeSinceStart}', unit: 's');
+      case Metric.distanceWithMIL:
+        return _tile('Distance with MIL', '${_data.distanceWithMIL}', unit: 'km');
+      case Metric.commandedPurge:
+        return _tile('Commanded purge', '${_data.commandedPurge}', unit: '%');
+      case Metric.warmupsSinceClear:
+        return _tile('Warm-ups since clear', '${_data.warmupsSinceClear}');
+      case Metric.distanceSinceClear:
+        return _tile('Distance since clear', '${_data.distanceSinceClear}', unit: 'km');
+      case Metric.catalystTemp:
+        return _tile('Catalyst temp', '${_data.catalystTemp}', unit: '°C');
+      case Metric.absoluteLoad:
+        return _tile('Absolute load', '${_data.absoluteLoad}', unit: '%');
+      case Metric.commandedEquivRatio:
+        return _tile('Commanded equiv ratio', _format2(_data.commandedEquivRatio));
+      case Metric.relativeThrottle:
+        return _tile('Relative throttle', '${_data.relativeThrottle}', unit: '%');
+      case Metric.absoluteThrottleB:
+        return _tile('Absolute throttle B', '${_data.absoluteThrottleB}', unit: '%');
+      case Metric.absoluteThrottleC:
+        return _tile('Absolute throttle C', '${_data.absoluteThrottleC}', unit: '%');
+      case Metric.pedalPositionD:
+        return _tile('Pedal position D', '${_data.pedalPositionD}', unit: '%');
+      case Metric.pedalPositionE:
+        return _tile('Pedal position E', '${_data.pedalPositionE}', unit: '%');
+      case Metric.pedalPositionF:
+        return _tile('Pedal position F', '${_data.pedalPositionF}', unit: '%');
+      case Metric.commandedThrottleActuator:
+        return _tile('Throttle actuator', '${_data.commandedThrottleActuator}', unit: '%');
+      case Metric.timeRunWithMIL:
+        return _tile('Time run with MIL', '${_data.timeRunWithMIL}', unit: 's');
+      case Metric.timeSinceCodesCleared:
+        return _tile('Time since codes cleared', '${_data.timeSinceCodesCleared}', unit: 's');
+      case Metric.maxEquivRatio:
+        return _tile('Max equiv ratio', _format2(_data.maxEquivRatio));
+      case Metric.maxAirFlow:
+        return _tile('Max air flow', '${_data.maxAirFlow}', unit: 'g/s');
+      case Metric.fuelType:
+        return _tile('Fuel type', '${_data.fuelType}');
+      case Metric.ethanolFuel:
+        return _tile('Ethanol fuel %', '${_data.ethanolFuel}', unit: '%');
+      case Metric.absEvapPressure:
+        return _tile('Abs evap pressure', '${_data.absEvapPressure}', unit: 'kPa');
+      case Metric.evapPressure:
+        return _tile('Evap pressure', '${_data.evapPressure}', unit: 'kPa');
+      case Metric.shortTermO2Trim1:
+        return _tile('ST O2 trim 1', '${_data.shortTermO2Trim1}', unit: '%');
+      case Metric.longTermO2Trim1:
+        return _tile('LT O2 trim 1', '${_data.longTermO2Trim1}', unit: '%');
+      case Metric.shortTermO2Trim2:
+        return _tile('ST O2 trim 2', '${_data.shortTermO2Trim2}', unit: '%');
+      case Metric.longTermO2Trim2:
+        return _tile('LT O2 trim 2', '${_data.longTermO2Trim2}', unit: '%');
+      case Metric.shortTermO2Trim3:
+        return _tile('ST O2 trim 3', '${_data.shortTermO2Trim3}', unit: '%');
+      case Metric.longTermO2Trim3:
+        return _tile('LT O2 trim 3', '${_data.longTermO2Trim3}', unit: '%');
+      case Metric.shortTermO2Trim4:
+        return _tile('ST O2 trim 4', '${_data.shortTermO2Trim4}', unit: '%');
+      case Metric.longTermO2Trim4:
+        return _tile('LT O2 trim 4', '${_data.longTermO2Trim4}', unit: '%');
+      case Metric.catalystTemp1:
+        return _tile('Catalyst temp 1', '${_data.catalystTemp1}', unit: '°C');
+      case Metric.catalystTemp2:
+        return _tile('Catalyst temp 2', '${_data.catalystTemp2}', unit: '°C');
+      case Metric.catalystTemp3:
+        return _tile('Catalyst temp 3', '${_data.catalystTemp3}', unit: '°C');
+      case Metric.catalystTemp4:
+        return _tile('Catalyst temp 4', '${_data.catalystTemp4}', unit: '°C');
+      case Metric.fuelPressure:
+        return _tile('Fuel pressure', '${_data.fuelPressure}', unit: 'kPa');
+      case Metric.shortTermFuelTrim1:
+        return _tile('ST fuel trim 1', '${_data.shortTermFuelTrim1}', unit: '%');
+      case Metric.longTermFuelTrim1:
+        return _tile('LT fuel trim 1', '${_data.longTermFuelTrim1}', unit: '%');
+      case Metric.shortTermFuelTrim2:
+        return _tile('ST fuel trim 2', '${_data.shortTermFuelTrim2}', unit: '%');
+      case Metric.longTermFuelTrim2:
+        return _tile('LT fuel trim 2', '${_data.longTermFuelTrim2}', unit: '%');
     }
   }
 
@@ -305,6 +404,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       showDragHandle: true,
       isScrollControlled: true,
       builder: (context) {
+        final currentPage = _page.value;
         final all = Metric.values;
         final labels = {
           Metric.rpm: 'RPM',
@@ -320,16 +420,87 @@ class _DashboardScreenState extends State<DashboardScreen> {
           Metric.voltage: 'Voltage V',
           Metric.ambient: 'Ambient °C',
           Metric.lambda: 'Lambda',
+          // Extended
+          Metric.fuelSystemStatus: 'Fuel system status',
+          Metric.timingAdvance: 'Timing advance',
+          Metric.runtimeSinceStart: 'Runtime since start',
+          Metric.distanceWithMIL: 'Distance with MIL on',
+          Metric.commandedPurge: 'Commanded purge',
+          Metric.warmupsSinceClear: 'Warm-ups since clear',
+          Metric.distanceSinceClear: 'Distance since clear',
+          Metric.catalystTemp: 'Catalyst temperature',
+          Metric.absoluteLoad: 'Absolute load value',
+          Metric.commandedEquivRatio: 'Commanded equiv ratio',
+          Metric.relativeThrottle: 'Relative throttle',
+          Metric.absoluteThrottleB: 'Absolute throttle B',
+          Metric.absoluteThrottleC: 'Absolute throttle C',
+          Metric.pedalPositionD: 'Pedal position D',
+          Metric.pedalPositionE: 'Pedal position E',
+          Metric.pedalPositionF: 'Pedal position F',
+          Metric.commandedThrottleActuator: 'Throttle actuator',
+          Metric.timeRunWithMIL: 'Time run with MIL',
+          Metric.timeSinceCodesCleared: 'Time since codes cleared',
+          Metric.maxEquivRatio: 'Max equiv ratio',
+          Metric.maxAirFlow: 'Max air flow',
+          Metric.fuelType: 'Fuel type',
+          Metric.ethanolFuel: 'Ethanol fuel %',
+          Metric.absEvapPressure: 'Abs evap pressure',
+          Metric.evapPressure: 'Evap pressure',
+          Metric.shortTermO2Trim1: 'ST O2 trim 1',
+          Metric.longTermO2Trim1: 'LT O2 trim 1',
+          Metric.shortTermO2Trim2: 'ST O2 trim 2',
+          Metric.longTermO2Trim2: 'LT O2 trim 2',
+          Metric.shortTermO2Trim3: 'ST O2 trim 3',
+          Metric.longTermO2Trim3: 'LT O2 trim 3',
+          Metric.shortTermO2Trim4: 'ST O2 trim 4',
+          Metric.longTermO2Trim4: 'LT O2 trim 4',
+          Metric.catalystTemp1: 'Catalyst temp 1',
+          Metric.catalystTemp2: 'Catalyst temp 2',
+          Metric.catalystTemp3: 'Catalyst temp 3',
+          Metric.catalystTemp4: 'Catalyst temp 4',
+          Metric.fuelPressure: 'Fuel pressure',
+          Metric.shortTermFuelTrim1: 'ST fuel trim 1',
+          Metric.longTermFuelTrim1: 'LT fuel trim 1',
+          Metric.shortTermFuelTrim2: 'ST fuel trim 2',
+          Metric.longTermFuelTrim2: 'LT fuel trim 2',
         };
 
+        List<Metric> getSelected() {
+          if (currentPage == 0) return page1;
+          if (currentPage == 1) return page2;
+          return page3;
+        }
+
+        void setSelected(List<Metric> value) {
+          if (currentPage == 0) page1 = value;
+          else if (currentPage == 1) page2 = value;
+          else page3 = value;
+        }
+
+        PageLayout getLayout() {
+          if (currentPage == 0) return page1Layout;
+          if (currentPage == 1) return page2Layout;
+          return page3Layout;
+        }
+
+        void setLayout(PageLayout layout) {
+          if (currentPage == 0) page1Layout = layout;
+          else if (currentPage == 1) page2Layout = layout;
+          else page3Layout = layout;
+        }
+
         return DraggableScrollableSheet(
-          initialChildSize: 0.8,
+          initialChildSize: 0.7,
           minChildSize: 0.5,
           maxChildSize: 0.95,
           expand: false,
           builder: (context, controller) {
             return StatefulBuilder(
               builder: (context, setModalState) {
+                final layout = getLayout();
+                final selected = getSelected();
+                final cap = layout == PageLayout.grid9 ? 9 : (layout == PageLayout.grid6 ? 6 : 3);
+
                 return SingleChildScrollView(
                   controller: controller,
                   child: Padding(
@@ -339,11 +510,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       children: [
                         Row(
                           children: [
-                            const Text('Trang 1', style: TextStyle(fontWeight: FontWeight.w600)),
+                            Text('Page ${currentPage + 1}', style: const TextStyle(fontWeight: FontWeight.w600)),
                             const SizedBox(width: 12),
                             DropdownButton<PageLayout>(
-                              value: page1Layout,
-                              onChanged: (v) => setModalState(() => setState(() => page1Layout = v ?? PageLayout.large)),
+                              value: layout,
+                              onChanged: (v) => setModalState(() => setState(() => setLayout(v ?? layout))),
                               items: const [
                                 DropdownMenuItem(value: PageLayout.large, child: Text('Large (RPM + 2)')),
                                 DropdownMenuItem(value: PageLayout.grid6, child: Text('Grid 2x3 (6)')),
@@ -352,99 +523,29 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             ),
                           ],
                         ),
+                        const SizedBox(height: 8),
                         Wrap(
                           spacing: 8,
-                          children: all
-                              .map((m) => FilterChip(
-                                    label: Text(labels[m]!),
-                                    selected: page1.contains(m),
-                                    onSelected: (v) {
-                                      setState(() {
-                                        final cap = page1Layout == PageLayout.grid9 ? 9 : (page1Layout == PageLayout.grid6 ? 6 : 3);
-                                        if (v) {
-                                          if (!page1.contains(m) && page1.length < cap) page1 = [...page1, m];
-                                        } else {
-                                          page1 = page1.where((e) => e != m).toList();
-                                        }
-                                      });
-                                      setModalState(() {});
-                                    },
-                                  ))
-                              .toList(),
-                        ),
-                        const SizedBox(height: 12),
-                        Row(
-                          children: [
-                            const Text('Trang 2', style: TextStyle(fontWeight: FontWeight.w600)),
-                            const SizedBox(width: 12),
-                            DropdownButton<PageLayout>(
-                              value: page2Layout,
-                              onChanged: (v) => setModalState(() => setState(() => page2Layout = v ?? PageLayout.grid6)),
-                              items: const [
-                                DropdownMenuItem(value: PageLayout.large, child: Text('Large (RPM + 2)')),
-                                DropdownMenuItem(value: PageLayout.grid6, child: Text('Grid 2x3 (6)')),
-                                DropdownMenuItem(value: PageLayout.grid9, child: Text('Grid 3x3 (9)')),
-                              ],
-                            ),
-                          ],
-                        ),
-                        Wrap(
-                          spacing: 8,
+                          runSpacing: 6,
                           children: all
                               .map((m) => FilterChip(
                                     label: Text(labels[m] ?? m.name),
-                                    selected: page2.contains(m),
+                                    selected: selected.contains(m),
                                     onSelected: (v) {
                                       setState(() {
-                                        final cap = page2Layout == PageLayout.grid9 ? 9 : (page2Layout == PageLayout.grid6 ? 6 : 3);
+                                        var cur = List<Metric>.from(getSelected());
                                         if (v) {
-                                          if (!page2.contains(m) && page2.length < cap) page2 = [...page2, m];
+                                          if (!cur.contains(m) && cur.length < cap) cur = [...cur, m];
                                         } else {
-                                          page2 = page2.where((e) => e != m).toList();
+                                          cur = cur.where((e) => e != m).toList();
                                         }
+                                        setSelected(cur);
                                       });
                                       setModalState(() {});
                                     },
                                   ))
                               .toList(),
                         ),
-                        const SizedBox(height: 12),
-                        Row(
-                          children: [
-                            const Text('Trang 3', style: TextStyle(fontWeight: FontWeight.w600)),
-                            const SizedBox(width: 12),
-                            DropdownButton<PageLayout>(
-                              value: page3Layout,
-                              onChanged: (v) => setModalState(() => setState(() => page3Layout = v ?? PageLayout.grid6)),
-                              items: const [
-                                DropdownMenuItem(value: PageLayout.large, child: Text('Large (RPM + 2)')),
-                                DropdownMenuItem(value: PageLayout.grid6, child: Text('Grid 2x3 (6)')),
-                                DropdownMenuItem(value: PageLayout.grid9, child: Text('Grid 3x3 (9)')),
-                              ],
-                            ),
-                          ],
-                        ),
-                        Wrap(
-                          spacing: 8,
-                          children: all
-                              .map((m) => FilterChip(
-                                    label: Text(labels[m] ?? m.name),
-                                    selected: page3.contains(m),
-                                    onSelected: (v) {
-                                      setState(() {
-                                        final cap = page3Layout == PageLayout.grid9 ? 9 : (page3Layout == PageLayout.grid6 ? 6 : 3);
-                                        if (v) {
-                                          if (!page3.contains(m) && page3.length < cap) page3 = [...page3, m];
-                                        } else {
-                                          page3 = page3.where((e) => e != m).toList();
-                                        }
-                                      });
-                                      setModalState(() {});
-                                    },
-                                  ))
-                              .toList(),
-                        ),
-                        const SizedBox(height: 12),
                       ],
                     ),
                   ),
@@ -511,6 +612,133 @@ class _DashboardScreenState extends State<DashboardScreen> {
           break;
         case Metric.lambda:
           set.add('015E');
+          break;
+        // Extended mapping
+        case Metric.fuelSystemStatus:
+          set.add('0103');
+          break;
+        case Metric.timingAdvance:
+          set.add('010E');
+          break;
+        case Metric.runtimeSinceStart:
+          set.add('011F');
+          break;
+        case Metric.distanceWithMIL:
+          set.add('0121');
+          break;
+        case Metric.commandedPurge:
+          set.add('012E');
+          break;
+        case Metric.warmupsSinceClear:
+          set.add('0130');
+          break;
+        case Metric.distanceSinceClear:
+          set.add('0131');
+          break;
+        case Metric.catalystTemp:
+          set.add('013C');
+          break;
+        case Metric.absoluteLoad:
+          set.add('0143');
+          break;
+        case Metric.commandedEquivRatio:
+          set.add('0144');
+          break;
+        case Metric.relativeThrottle:
+          set.add('0145');
+          break;
+        case Metric.absoluteThrottleB:
+          set.add('0147');
+          break;
+        case Metric.absoluteThrottleC:
+          set.add('0148');
+          break;
+        case Metric.pedalPositionD:
+          set.add('0149');
+          break;
+        case Metric.pedalPositionE:
+          set.add('014A');
+          break;
+        case Metric.pedalPositionF:
+          set.add('014B');
+          break;
+        case Metric.commandedThrottleActuator:
+          set.add('014C');
+          break;
+        case Metric.timeRunWithMIL:
+          set.add('014D');
+          break;
+        case Metric.timeSinceCodesCleared:
+          set.add('014E');
+          break;
+        case Metric.maxEquivRatio:
+          set.add('014F');
+          break;
+        case Metric.maxAirFlow:
+          set.add('0150');
+          break;
+        case Metric.fuelType:
+          set.add('0151');
+          break;
+        case Metric.ethanolFuel:
+          set.add('0152');
+          break;
+        case Metric.absEvapPressure:
+          set.add('0153');
+          break;
+        case Metric.evapPressure:
+          set.add('0154');
+          break;
+        case Metric.shortTermO2Trim1:
+          set.add('0155');
+          break;
+        case Metric.longTermO2Trim1:
+          set.add('0156');
+          break;
+        case Metric.shortTermO2Trim2:
+          set.add('0157');
+          break;
+        case Metric.longTermO2Trim2:
+          set.add('0158');
+          break;
+        case Metric.shortTermO2Trim3:
+          set.add('0159');
+          break;
+        case Metric.longTermO2Trim3:
+          set.add('015A');
+          break;
+        case Metric.shortTermO2Trim4:
+          set.add('015B');
+          break;
+        case Metric.longTermO2Trim4:
+          set.add('015C');
+          break;
+        case Metric.catalystTemp1:
+          set.add('015D');
+          break;
+        case Metric.catalystTemp2:
+          set.add('015F');
+          break;
+        case Metric.catalystTemp3:
+          set.add('0160');
+          break;
+        case Metric.catalystTemp4:
+          set.add('0160');
+          break;
+        case Metric.fuelPressure:
+          set.add('010A');
+          break;
+        case Metric.shortTermFuelTrim1:
+          set.add('0106');
+          break;
+        case Metric.longTermFuelTrim1:
+          set.add('0107');
+          break;
+        case Metric.shortTermFuelTrim2:
+          set.add('0108');
+          break;
+        case Metric.longTermFuelTrim2:
+          set.add('0109');
           break;
       }
     }
