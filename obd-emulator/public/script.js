@@ -32,6 +32,7 @@ const elements = {
     ecuMinus: document.getElementById('ecuMinus'),
     ecuPlus: document.getElementById('ecuPlus'),
     clearLogBtn: document.getElementById('clearLogBtn'),
+    toggleLiveDataViewBtn: document.getElementById('toggleLiveDataViewBtn'),
     
     // Live data
     connectedClients: document.getElementById('connectedClients'),
@@ -100,7 +101,9 @@ const elements = {
     fuelBar: document.getElementById('fuelBar'),
     
     // Log
-    logContainer: document.getElementById('logContainer')
+    logContainer: document.getElementById('logContainer'),
+    liveDataSection: document.querySelector('.live-data-section'),
+    liveDataGrid: document.getElementById('liveDataGrid')
 };
 
 // Current configuration
@@ -113,6 +116,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     loadConfiguration();
     setupEventListeners();
+    initLiveDataViewMode();
     
     // Request current configuration from server
     fetch('/api/config')
@@ -130,7 +134,7 @@ document.addEventListener('DOMContentLoaded', function() {
 // Update time display
 function updateTime() {
     const now = new Date();
-    const timeString = now.toLocaleTimeString('vi-VN', { 
+    const timeString = now.toLocaleTimeString('en-US', { 
         hour: '2-digit', 
         minute: '2-digit',
         hour12: false 
@@ -212,6 +216,11 @@ function setupEventListeners() {
     elements.resetBtn.addEventListener('click', resetConfiguration);
     elements.clearLogBtn.addEventListener('click', clearLog);
     
+    // Toggle live data view
+    if (elements.toggleLiveDataViewBtn) {
+        elements.toggleLiveDataViewBtn.addEventListener('click', toggleLiveDataViewMode);
+    }
+    
     // ECU count controls
     elements.ecuMinus.addEventListener('click', () => {
         const current = parseInt(elements.ecuCount.value);
@@ -249,6 +258,32 @@ function setupEventListeners() {
     toggles.forEach(toggle => {
         toggle.addEventListener('change', saveConfiguration);
     });
+}
+
+// Live Data view mode (scroll/full)
+function initLiveDataViewMode() {
+    const mode = localStorage.getItem('liveDataViewMode') || 'scroll';
+    applyLiveDataViewMode(mode);
+}
+
+function toggleLiveDataViewMode() {
+    const current = localStorage.getItem('liveDataViewMode') || 'scroll';
+    const next = current === 'scroll' ? 'full' : 'scroll';
+    localStorage.setItem('liveDataViewMode', next);
+    applyLiveDataViewMode(next);
+}
+
+function applyLiveDataViewMode(mode) {
+    if (!elements.liveDataSection || !elements.toggleLiveDataViewBtn) return;
+    if (mode === 'full') {
+        elements.liveDataSection.classList.add('full');
+        elements.toggleLiveDataViewBtn.innerHTML = '<i class="fas fa-compress"></i> Collapse';
+        elements.toggleLiveDataViewBtn.title = 'Collapse to scroll mode';
+    } else {
+        elements.liveDataSection.classList.remove('full');
+        elements.toggleLiveDataViewBtn.innerHTML = '<i class="fas fa-expand"></i> Show full';
+        elements.toggleLiveDataViewBtn.title = 'Show all';
+    }
 }
 
 // Start server
@@ -420,6 +455,7 @@ function updateDataValue(element, value) {
 
 // Update progress bar
 function updateProgressBar(element, value, min, max) {
+    if (!element) return;
     const percentage = Math.min(100, Math.max(0, ((value - min) / (max - min)) * 100));
     element.style.width = percentage + '%';
 }

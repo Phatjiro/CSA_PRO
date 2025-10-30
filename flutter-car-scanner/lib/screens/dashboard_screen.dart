@@ -30,13 +30,76 @@ class _DashboardScreenState extends State<DashboardScreen> {
     voltageV: 0,
     ambientTempC: 0,
     lambda: 0,
+    fuelSystemStatus: 0,
+    timingAdvance: 0,
+    runtimeSinceStart: 0,
+    distanceWithMIL: 0,
+    commandedPurge: 0,
+    warmupsSinceClear: 0,
+    distanceSinceClear: 0,
+    catalystTemp: 0,
+    absoluteLoad: 0,
+    commandedEquivRatio: 0,
+    relativeThrottle: 0,
+    absoluteThrottleB: 0,
+    absoluteThrottleC: 0,
+    pedalPositionD: 0,
+    pedalPositionE: 0,
+    pedalPositionF: 0,
+    commandedThrottleActuator: 0,
+    timeRunWithMIL: 0,
+    timeSinceCodesCleared: 0,
+    maxEquivRatio: 0,
+    maxAirFlow: 0,
+    fuelType: 0,
+    ethanolFuel: 0,
+    absEvapPressure: 0,
+    evapPressure: 0,
+    shortTermO2Trim1: 0,
+    longTermO2Trim1: 0,
+    shortTermO2Trim2: 0,
+    longTermO2Trim2: 0,
+    shortTermO2Trim3: 0,
+    longTermO2Trim3: 0,
+    shortTermO2Trim4: 0,
+    longTermO2Trim4: 0,
+    catalystTemp1: 0,
+    catalystTemp2: 0,
+    catalystTemp3: 0,
+    catalystTemp4: 0,
+    fuelPressure: 0,
+    shortTermFuelTrim1: 0,
+    longTermFuelTrim1: 0,
+    shortTermFuelTrim2: 0,
+    longTermFuelTrim2: 0,
   );
 
   final ValueNotifier<int> _page = ValueNotifier<int>(0);
   // Selections per page
   List<Metric> page1 = const [Metric.rpm, Metric.speed, Metric.coolant];
-  List<Metric> page2 = const [Metric.intake, Metric.throttle, Metric.fuel];
-  List<Metric> page3 = const [Metric.load, Metric.map, Metric.maf];
+  // Page 2 & 3: common metrics only (9 mỗi trang)
+  List<Metric> page2 = const [
+    Metric.intake,
+    Metric.throttle,
+    Metric.fuel,
+    Metric.load,
+    Metric.map,
+    Metric.maf,
+    Metric.voltage,
+    Metric.ambient,
+    Metric.lambda,
+  ];
+  List<Metric> page3 = const [
+    Metric.map,
+    Metric.baro,
+    Metric.maf,
+    Metric.fuel,
+    Metric.throttle,
+    Metric.load,
+    Metric.voltage,
+    Metric.ambient,
+    Metric.lambda,
+  ];
   PageLayout page1Layout = PageLayout.large; // big RPM + 2 tiles
   PageLayout page2Layout = PageLayout.grid9;  // 3x3 grid (max 9)
   PageLayout page3Layout = PageLayout.grid9;  // 3x3 grid (max 9)
@@ -49,6 +112,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
         _data = event;
       });
     });
+    // Ban đầu, chỉ bật các PIDs cho trang 1 (RPM, Speed, Coolant)
+    _applyEnabledPidsForPage(0);
   }
 
   @override
@@ -80,7 +145,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
       body: SafeArea(
         minimum: const EdgeInsets.only(bottom: 12),
         child: PageView(
-          onPageChanged: (i) => _page.value = i,
+          onPageChanged: (i) {
+            _page.value = i;
+            _applyEnabledPidsForPage(i);
+          },
           children: [
             _pageContent(page1, page1Layout),
             _pageContent(page2, page2Layout),
@@ -386,6 +454,143 @@ class _DashboardScreenState extends State<DashboardScreen> {
           },
         );
       },
+    );
+  }
+
+  void _applyEnabledPidsForPage(int pageIndex) {
+    // Luôn đảm bảo các PID của Page 1 (RPM, Speed, Coolant)
+    final required = <Metric>{Metric.rpm, Metric.speed, Metric.coolant};
+    if (pageIndex == 1) {
+      required.addAll(page2);
+    } else if (pageIndex == 2) {
+      required.addAll(page3);
+    }
+    final pids = _metricsToPids(required.toList());
+    widget.client.setEnabledPids(pids);
+  }
+
+  Set<String> _metricsToPids(List<Metric> ms) {
+    final set = <String>{};
+    for (final m in ms) {
+      switch (m) {
+        case Metric.rpm:
+          set.add('010C');
+          break;
+        case Metric.speed:
+          set.add('010D');
+          break;
+        case Metric.coolant:
+          set.add('0105');
+          break;
+        case Metric.intake:
+          set.add('010F');
+          break;
+        case Metric.throttle:
+          set.add('0111');
+          break;
+        case Metric.fuel:
+          set.add('012F');
+          break;
+        case Metric.load:
+          set.add('0104');
+          break;
+        case Metric.map:
+          set.add('010B');
+          break;
+        case Metric.baro:
+          set.add('0133');
+          break;
+        case Metric.maf:
+          set.add('0110');
+          break;
+        case Metric.voltage:
+          set.add('0142');
+          break;
+        case Metric.ambient:
+          set.add('0146');
+          break;
+        case Metric.lambda:
+          set.add('015E');
+          break;
+      }
+    }
+    return set;
+  }
+
+  Widget _allMetricsPage() {
+    final entries = <MapEntry<String, String>>[
+      MapEntry('Engine RPM', '${_data.engineRpm} rpm'),
+      MapEntry('Vehicle Speed', '${_data.vehicleSpeedKmh} km/h'),
+      MapEntry('Coolant Temp', '${_data.coolantTempC} °C'),
+      MapEntry('Intake Temp', '${_data.intakeTempC} °C'),
+      MapEntry('Throttle Position', '${_data.throttlePositionPercent} %'),
+      MapEntry('Fuel Level', '${_data.fuelLevelPercent} %'),
+      MapEntry('Engine Load', '${_data.engineLoadPercent} %'),
+      MapEntry('MAP', '${_data.mapKpa} kPa'),
+      MapEntry('Baro', '${_data.baroKpa} kPa'),
+      MapEntry('MAF', '${_data.mafGs} g/s'),
+      MapEntry('Voltage', _format1(_data.voltageV) + ' V'),
+      MapEntry('Ambient', '${_data.ambientTempC} °C'),
+      MapEntry('Lambda', _format2(_data.lambda)),
+      MapEntry('Fuel System Status', '${_data.fuelSystemStatus}'),
+      MapEntry('Timing Advance', '${_data.timingAdvance} °'),
+      MapEntry('Runtime Since Start', '${_data.runtimeSinceStart} s'),
+      MapEntry('Distance with MIL', '${_data.distanceWithMIL} km'),
+      MapEntry('Commanded Purge', '${_data.commandedPurge} %'),
+      MapEntry('Warm-ups Since Clear', '${_data.warmupsSinceClear}'),
+      MapEntry('Distance Since Clear', '${_data.distanceSinceClear} km'),
+      MapEntry('Catalyst Temp', '${_data.catalystTemp} °C'),
+      MapEntry('Absolute Load', '${_data.absoluteLoad} %'),
+      MapEntry('Commanded Equiv Ratio', _format2(_data.commandedEquivRatio)),
+      MapEntry('Relative Throttle', '${_data.relativeThrottle} %'),
+      MapEntry('Abs Throttle B', '${_data.absoluteThrottleB} %'),
+      MapEntry('Abs Throttle C', '${_data.absoluteThrottleC} %'),
+      MapEntry('Pedal Position D', '${_data.pedalPositionD} %'),
+      MapEntry('Pedal Position E', '${_data.pedalPositionE} %'),
+      MapEntry('Pedal Position F', '${_data.pedalPositionF} %'),
+      MapEntry('Throttle Actuator', '${_data.commandedThrottleActuator} %'),
+      MapEntry('Time Run With MIL', '${_data.timeRunWithMIL} s'),
+      MapEntry('Time Since Codes Cleared', '${_data.timeSinceCodesCleared} s'),
+      MapEntry('Max Equiv Ratio', _format2(_data.maxEquivRatio)),
+      MapEntry('Max Air Flow', '${_data.maxAirFlow} g/s'),
+      MapEntry('Fuel Type', '${_data.fuelType}'),
+      MapEntry('Ethanol Fuel %', '${_data.ethanolFuel} %'),
+      MapEntry('Abs Evap Pressure', '${_data.absEvapPressure} kPa'),
+      MapEntry('Evap Pressure', '${_data.evapPressure} kPa'),
+      MapEntry('ST O2 Trim 1', '${_data.shortTermO2Trim1} %'),
+      MapEntry('LT O2 Trim 1', '${_data.longTermO2Trim1} %'),
+      MapEntry('ST O2 Trim 2', '${_data.shortTermO2Trim2} %'),
+      MapEntry('LT O2 Trim 2', '${_data.longTermO2Trim2} %'),
+      MapEntry('ST O2 Trim 3', '${_data.shortTermO2Trim3} %'),
+      MapEntry('LT O2 Trim 3', '${_data.longTermO2Trim3} %'),
+      MapEntry('ST O2 Trim 4', '${_data.shortTermO2Trim4} %'),
+      MapEntry('LT O2 Trim 4', '${_data.longTermO2Trim4} %'),
+      MapEntry('Catalyst Temp 1', '${_data.catalystTemp1} °C'),
+      MapEntry('Catalyst Temp 2', '${_data.catalystTemp2} °C'),
+      MapEntry('Catalyst Temp 3', '${_data.catalystTemp3} °C'),
+      MapEntry('Catalyst Temp 4', '${_data.catalystTemp4} °C'),
+      MapEntry('Fuel Pressure', '${_data.fuelPressure} kPa'),
+      MapEntry('ST Fuel Trim 1', '${_data.shortTermFuelTrim1} %'),
+      MapEntry('LT Fuel Trim 1', '${_data.longTermFuelTrim1} %'),
+      MapEntry('ST Fuel Trim 2', '${_data.shortTermFuelTrim2} %'),
+      MapEntry('LT Fuel Trim 2', '${_data.longTermFuelTrim2} %'),
+    ];
+
+    return Padding(
+      padding: const EdgeInsets.all(8),
+      child: GridView.builder(
+        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 2,
+          mainAxisSpacing: 8,
+          crossAxisSpacing: 8,
+          childAspectRatio: 2.6,
+        ),
+        itemCount: entries.length,
+        itemBuilder: (context, index) {
+          final e = entries[index];
+          return _tile(e.key, e.value);
+        },
+      ),
     );
   }
 }

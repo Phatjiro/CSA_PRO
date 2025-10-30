@@ -357,7 +357,7 @@ class _LiveDataSelectScreenState extends State<LiveDataSelectScreen> {
                               MaterialPageRoute(
                                 builder: (context) => LiveDataChartScreen(
                                   selectedMetrics: selectedMetrics,
-                                  client: ConnectionManager().client!,
+                                  client: ConnectionManager.instance.client!,
                                 ),
                               ),
                             );

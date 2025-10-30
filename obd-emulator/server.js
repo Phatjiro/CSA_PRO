@@ -7,6 +7,9 @@ const app = express();
 const server = http.createServer(app);
 const io = socketIo(server);
 
+// Middleware
+app.use(express.json());
+
 // Serve static files
 app.use(express.static('public'));
 
@@ -397,7 +400,7 @@ setInterval(() => {
     // Tạo dữ liệu giả lập với giá trị thực tế
     const liveData = {
       timestamp: now.toLocaleTimeString(),
-      engineRPM: Math.floor(800 + Math.sin(time / 1000) * 2000),
+      engineRPM: Math.max(0, Math.floor(800 + ((Math.sin(time / 1000) + 1) / 2) * 5000)),
       vehicleSpeed: Math.floor(60 + Math.sin(time / 2000) * 40),
       coolantTemp: Math.floor(80 + Math.sin(time / 3000) * 20),
       intakeTemp: Math.floor(25 + Math.sin(time / 4000) * 15),
@@ -491,6 +494,12 @@ function startTCPServer() {
         response = 'OK';
       } else if (command === 'ATL0') {
         response = 'OK';
+      } else if (command === 'ATS0') {
+        emulatorConfig.settings.spaces = false;
+        response = 'OK';
+      } else if (command === 'ATS1') {
+        emulatorConfig.settings.spaces = true;
+        response = 'OK';
       } else if (command === 'ATH0') {
         response = 'OK';
       } else if (command === 'ATD') {
@@ -578,7 +587,54 @@ io.on('connection', (socket) => {
   });
 });
 
+// REST APIs for web UI
+app.get('/api/config', (req, res) => {
+  res.json(emulatorConfig);
+});
+
+app.post('/api/start', (req, res) => {
+  try {
+    // Allow passing config from client
+    if (req.body && typeof req.body === 'object') {
+      Object.assign(emulatorConfig, req.body);
+    }
+
+    if (emulatorConfig.isRunning) {
+      return res.json({ success: false, message: 'Server already running' });
+    }
+
+    startTCPServer();
+    emulatorConfig.isRunning = true;
+    io.emit('status', { running: true, port: emulatorConfig.port });
+    return res.json({ success: true, port: emulatorConfig.port });
+  } catch (err) {
+    console.error('Failed to start TCP server:', err);
+    return res.status(500).json({ success: false, message: err.message || 'Unknown error' });
+  }
+});
+
+app.post('/api/stop', (req, res) => {
+  try {
+    if (!emulatorConfig.isRunning) {
+      return res.json({ success: true, message: 'Server already stopped' });
+    }
+
+    tcpServer.close(() => {
+      emulatorConfig.isRunning = false;
+      connectedClients.forEach(c => { try { c.destroy(); } catch (e) {} });
+      connectedClients.length = 0;
+      io.emit('status', { running: false });
+      return res.json({ success: true });
+    });
+  } catch (err) {
+    console.error('Failed to stop TCP server:', err);
+    return res.status(500).json({ success: false, message: err.message || 'Unknown error' });
+  }
+});
+
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+  const url = `http://localhost:${PORT}`;
+  console.log(`Server running at ${url}`);
+  console.log('Press CTRL+C to stop.');
 });

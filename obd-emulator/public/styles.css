@@ -361,6 +361,20 @@ body {
     gap: 12px;
 }
 
+/* Default: live data dạng cuộn */
+.live-data-grid {
+    max-height: 360px;
+    overflow-y: auto;
+    padding-right: 6px; /* chừa chỗ cho scrollbar */
+}
+
+/* Chế độ hiển thị full (không cuộn) */
+.live-data-section.full .live-data-grid {
+    max-height: none;
+    overflow: visible;
+    padding-right: 0;
+}
+
 .data-card {
     background: #f8f9fa;
     border-radius: 8px;

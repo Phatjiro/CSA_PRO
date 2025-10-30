@@ -17,6 +17,13 @@ class ObdClient {
   Timer? _idleTimer;
   Completer<void>? _idleCompleter;
 
+  // Enabled PIDs filtering (only poll what UI needs)
+  Set<String> _enabledPids = {'010C', '010D', '0105'}; // default page1
+  void setEnabledPids(Set<String> pids) {
+    _enabledPids = {...pids};
+  }
+  bool _enabled(String pid) => _enabledPids.contains(pid);
+
   ObdClient({required this.host, required this.port});
 
   Stream<ObdLiveData> get dataStream => _dataController.stream;
@@ -86,68 +93,68 @@ class ObdClient {
 
   Future<void> _queryAndEmit() async {
     try {
-      // Core PIDs
-      final rpmHex = await _sendAndRead('010C');
-      final speedHex = await _sendAndRead('010D');
-      final ectHex = await _sendAndRead('0105');
-      final iat = _parseIntakeTemp(await _sendAndRead('010F'));
-      final thr = _parseThrottle(await _sendAndRead('0111'));
-      final fuel = _parseFuel(await _sendAndRead('012F'));
-      final load = _parsePercent(await _sendAndRead('0104'));
-      final map = _parseSingleByte(await _sendAndRead('010B'));
-      final baro = _parseSingleByte(await _sendAndRead('0133'));
-      final maf = _parseMaf(await _sendAndRead('0110'));
-      final voltage = _parseVoltage(await _sendAndRead('0142'));
-      final ambient = _parseAmbient(await _sendAndRead('0146'));
-      final lambda = _parseLambda(await _sendAndRead('015E'));
+      // Core PIDs (guarded by enabled set)
+      final rpmHex = _enabled('010C') ? await _sendAndRead('010C') : '';
+      final speedHex = _enabled('010D') ? await _sendAndRead('010D') : '';
+      final ectHex = _enabled('0105') ? await _sendAndRead('0105') : '';
+      final iat = _enabled('010F') ? _parseIntakeTemp(await _sendAndRead('010F')) : (_last?.intakeTempC ?? 0);
+      final thr = _enabled('0111') ? _parseThrottle(await _sendAndRead('0111')) : (_last?.throttlePositionPercent ?? 0);
+      final fuel = _enabled('012F') ? _parseFuel(await _sendAndRead('012F')) : (_last?.fuelLevelPercent ?? 0);
+      final load = _enabled('0104') ? _parsePercent(await _sendAndRead('0104')) : (_last?.engineLoadPercent ?? 0);
+      final map = _enabled('010B') ? _parseSingleByte(await _sendAndRead('010B')) : (_last?.mapKpa ?? 0);
+      final baro = _enabled('0133') ? _parseSingleByte(await _sendAndRead('0133')) : (_last?.baroKpa ?? 0);
+      final maf = _enabled('0110') ? _parseMaf(await _sendAndRead('0110')) : (_last?.mafGs ?? 0);
+      final voltage = _enabled('0142') ? _parseVoltage(await _sendAndRead('0142')) : (_last?.voltageV ?? 0);
+      final ambient = _enabled('0146') ? _parseAmbient(await _sendAndRead('0146')) : (_last?.ambientTempC ?? 0);
+      final lambda = _enabled('015E') ? _parseLambda(await _sendAndRead('015E')) : (_last?.lambda ?? 0);
 
-      // Additional PIDs
-      final fuelSystemStatus = _parseSingleByte(await _sendAndRead('0103'));
-      final timingAdvance = _parseTimingAdvance(await _sendAndRead('010E'));
-      final runtimeSinceStart = _parseTwoBytes(await _sendAndRead('011F'));
-      final distanceWithMIL = _parseTwoBytes(await _sendAndRead('0121'));
-      final commandedPurge = _parseSingleByte(await _sendAndRead('012E'));
-      final warmupsSinceClear = _parseSingleByte(await _sendAndRead('0130'));
-      final distanceSinceClear = _parseTwoBytes(await _sendAndRead('0131'));
-      final catalystTemp = _parseTwoBytes(await _sendAndRead('013C'));
-      final absoluteLoad = _parseSingleByte(await _sendAndRead('0143'));
-      final commandedEquivRatio = _parseTwoBytesDouble(await _sendAndRead('0144'));
-      final relativeThrottle = _parseSingleByte(await _sendAndRead('0145'));
-      final absoluteThrottleB = _parseSingleByte(await _sendAndRead('0147'));
-      final absoluteThrottleC = _parseSingleByte(await _sendAndRead('0148'));
-      final pedalPositionD = _parseSingleByte(await _sendAndRead('0149'));
-      final pedalPositionE = _parseSingleByte(await _sendAndRead('014A'));
-      final pedalPositionF = _parseSingleByte(await _sendAndRead('014B'));
-      final commandedThrottleActuator = _parseSingleByte(await _sendAndRead('014C'));
-      final timeRunWithMIL = _parseTwoBytes(await _sendAndRead('014D'));
-      final timeSinceCodesCleared = _parseTwoBytes(await _sendAndRead('014E'));
-      final maxEquivRatio = _parseTwoBytesDouble(await _sendAndRead('014F'));
-      final maxAirFlow = _parseTwoBytes(await _sendAndRead('0150'));
-      final fuelType = _parseSingleByte(await _sendAndRead('0151'));
-      final ethanolFuel = _parseSingleByte(await _sendAndRead('0152'));
-      final absEvapPressure = _parseTwoBytes(await _sendAndRead('0153'));
-      final evapPressure = _parseTwoBytes(await _sendAndRead('0154'));
-      final shortTermO2Trim1 = _parseFuelTrim(await _sendAndRead('0155'));
-      final longTermO2Trim1 = _parseFuelTrim(await _sendAndRead('0156'));
-      final shortTermO2Trim2 = _parseFuelTrim(await _sendAndRead('0157'));
-      final longTermO2Trim2 = _parseFuelTrim(await _sendAndRead('0158'));
-      final shortTermO2Trim3 = _parseFuelTrim(await _sendAndRead('0159'));
-      final longTermO2Trim3 = _parseFuelTrim(await _sendAndRead('015A'));
-      final shortTermO2Trim4 = _parseFuelTrim(await _sendAndRead('015B'));
-      final longTermO2Trim4 = _parseFuelTrim(await _sendAndRead('015C'));
-      final catalystTemp1 = _parseTwoBytes(await _sendAndRead('015D'));
-      final catalystTemp2 = _parseTwoBytes(await _sendAndRead('015F'));
-      final catalystTemp3 = _parseTwoBytes(await _sendAndRead('0160'));
-      final catalystTemp4 = _parseTwoBytes(await _sendAndRead('0160')); // Using same as 3
-      final fuelPressure = _parseTwoBytes(await _sendAndRead('010A'));
-      final shortTermFuelTrim1 = _parseFuelTrim(await _sendAndRead('0106'));
-      final longTermFuelTrim1 = _parseFuelTrim(await _sendAndRead('0107'));
-      final shortTermFuelTrim2 = _parseFuelTrim(await _sendAndRead('0108'));
-      final longTermFuelTrim2 = _parseFuelTrim(await _sendAndRead('0109'));
+      // Additional PIDs (guarded)
+      final fuelSystemStatus = _enabled('0103') ? _parseSingleByte(await _sendAndRead('0103')) : (_last?.fuelSystemStatus ?? 0);
+      final timingAdvance = _enabled('010E') ? _parseTimingAdvance(await _sendAndRead('010E')) : (_last?.timingAdvance ?? 0);
+      final runtimeSinceStart = _enabled('011F') ? _parseTwoBytes(await _sendAndRead('011F')) : (_last?.runtimeSinceStart ?? 0);
+      final distanceWithMIL = _enabled('0121') ? _parseTwoBytes(await _sendAndRead('0121')) : (_last?.distanceWithMIL ?? 0);
+      final commandedPurge = _enabled('012E') ? _parseSingleByte(await _sendAndRead('012E')) : (_last?.commandedPurge ?? 0);
+      final warmupsSinceClear = _enabled('0130') ? _parseSingleByte(await _sendAndRead('0130')) : (_last?.warmupsSinceClear ?? 0);
+      final distanceSinceClear = _enabled('0131') ? _parseTwoBytes(await _sendAndRead('0131')) : (_last?.distanceSinceClear ?? 0);
+      final catalystTemp = _enabled('013C') ? _parseTwoBytes(await _sendAndRead('013C')) : (_last?.catalystTemp ?? 0);
+      final absoluteLoad = _enabled('0143') ? _parseSingleByte(await _sendAndRead('0143')) : (_last?.absoluteLoad ?? 0);
+      final commandedEquivRatio = _enabled('0144') ? _parseTwoBytesDouble(await _sendAndRead('0144')) : (_last?.commandedEquivRatio ?? 0);
+      final relativeThrottle = _enabled('0145') ? _parseSingleByte(await _sendAndRead('0145')) : (_last?.relativeThrottle ?? 0);
+      final absoluteThrottleB = _enabled('0147') ? _parseSingleByte(await _sendAndRead('0147')) : (_last?.absoluteThrottleB ?? 0);
+      final absoluteThrottleC = _enabled('0148') ? _parseSingleByte(await _sendAndRead('0148')) : (_last?.absoluteThrottleC ?? 0);
+      final pedalPositionD = _enabled('0149') ? _parseSingleByte(await _sendAndRead('0149')) : (_last?.pedalPositionD ?? 0);
+      final pedalPositionE = _enabled('014A') ? _parseSingleByte(await _sendAndRead('014A')) : (_last?.pedalPositionE ?? 0);
+      final pedalPositionF = _enabled('014B') ? _parseSingleByte(await _sendAndRead('014B')) : (_last?.pedalPositionF ?? 0);
+      final commandedThrottleActuator = _enabled('014C') ? _parseSingleByte(await _sendAndRead('014C')) : (_last?.commandedThrottleActuator ?? 0);
+      final timeRunWithMIL = _enabled('014D') ? _parseTwoBytes(await _sendAndRead('014D')) : (_last?.timeRunWithMIL ?? 0);
+      final timeSinceCodesCleared = _enabled('014E') ? _parseTwoBytes(await _sendAndRead('014E')) : (_last?.timeSinceCodesCleared ?? 0);
+      final maxEquivRatio = _enabled('014F') ? _parseTwoBytesDouble(await _sendAndRead('014F')) : (_last?.maxEquivRatio ?? 0);
+      final maxAirFlow = _enabled('0150') ? _parseTwoBytes(await _sendAndRead('0150')) : (_last?.maxAirFlow ?? 0);
+      final fuelType = _enabled('0151') ? _parseSingleByte(await _sendAndRead('0151')) : (_last?.fuelType ?? 0);
+      final ethanolFuel = _enabled('0152') ? _parseSingleByte(await _sendAndRead('0152')) : (_last?.ethanolFuel ?? 0);
+      final absEvapPressure = _enabled('0153') ? _parseTwoBytes(await _sendAndRead('0153')) : (_last?.absEvapPressure ?? 0);
+      final evapPressure = _enabled('0154') ? _parseTwoBytes(await _sendAndRead('0154')) : (_last?.evapPressure ?? 0);
+      final shortTermO2Trim1 = _enabled('0155') ? _parseFuelTrim(await _sendAndRead('0155')) : (_last?.shortTermO2Trim1 ?? 0);
+      final longTermO2Trim1 = _enabled('0156') ? _parseFuelTrim(await _sendAndRead('0156')) : (_last?.longTermO2Trim1 ?? 0);
+      final shortTermO2Trim2 = _enabled('0157') ? _parseFuelTrim(await _sendAndRead('0157')) : (_last?.shortTermO2Trim2 ?? 0);
+      final longTermO2Trim2 = _enabled('0158') ? _parseFuelTrim(await _sendAndRead('0158')) : (_last?.longTermO2Trim2 ?? 0);
+      final shortTermO2Trim3 = _enabled('0159') ? _parseFuelTrim(await _sendAndRead('0159')) : (_last?.shortTermO2Trim3 ?? 0);
+      final longTermO2Trim3 = _enabled('015A') ? _parseFuelTrim(await _sendAndRead('015A')) : (_last?.longTermO2Trim3 ?? 0);
+      final shortTermO2Trim4 = _enabled('015B') ? _parseFuelTrim(await _sendAndRead('015B')) : (_last?.shortTermO2Trim4 ?? 0);
+      final longTermO2Trim4 = _enabled('015C') ? _parseFuelTrim(await _sendAndRead('015C')) : (_last?.longTermO2Trim4 ?? 0);
+      final catalystTemp1 = _enabled('015D') ? _parseTwoBytes(await _sendAndRead('015D')) : (_last?.catalystTemp1 ?? 0);
+      final catalystTemp2 = _enabled('015F') ? _parseTwoBytes(await _sendAndRead('015F')) : (_last?.catalystTemp2 ?? 0);
+      final catalystTemp3 = _enabled('0160') ? _parseTwoBytes(await _sendAndRead('0160')) : (_last?.catalystTemp3 ?? 0);
+      final catalystTemp4 = _enabled('0160') ? _parseTwoBytes(await _sendAndRead('0160')) : (_last?.catalystTemp4 ?? 0);
+      final fuelPressure = _enabled('010A') ? _parseTwoBytes(await _sendAndRead('010A')) : (_last?.fuelPressure ?? 0);
+      final shortTermFuelTrim1 = _enabled('0106') ? _parseFuelTrim(await _sendAndRead('0106')) : (_last?.shortTermFuelTrim1 ?? 0);
+      final longTermFuelTrim1 = _enabled('0107') ? _parseFuelTrim(await _sendAndRead('0107')) : (_last?.longTermFuelTrim1 ?? 0);
+      final shortTermFuelTrim2 = _enabled('0108') ? _parseFuelTrim(await _sendAndRead('0108')) : (_last?.shortTermFuelTrim2 ?? 0);
+      final longTermFuelTrim2 = _enabled('0109') ? _parseFuelTrim(await _sendAndRead('0109')) : (_last?.longTermFuelTrim2 ?? 0);
 
-      final rpm = _parseRpm(rpmHex);
-      final speed = _parseSpeed(speedHex);
-      final ect = _parseCoolantTemp(ectHex);
+      final rpm = _enabled('010C') ? _parseRpm(rpmHex) : (_last?.engineRpm ?? 0);
+      final speed = _enabled('010D') ? _parseSpeed(speedHex) : (_last?.vehicleSpeedKmh ?? 0);
+      final ect = _enabled('0105') ? _parseCoolantTemp(ectHex) : (_last?.coolantTempC ?? 0);
 
       final current = ObdLiveData(
         engineRpm: rpm == 0 && _likelyInvalid(rpmHex) ? (_last?.engineRpm ?? 0) : rpm,
@@ -214,25 +221,26 @@ class ObdClient {
   }
 
   static int _parseRpm(String response) {
-    // Expect: 41 0C AA BB
-    final parts = response.split(RegExp(r"\s+"));
-    final idx = parts.indexWhere((p) => p.toUpperCase() == '41');
-    // When spaces removed (ATS0), response may be like '410C1F40'
-    if (idx == -1) {
-      final cleaned = response.replaceAll(RegExp(r"\s+"), '');
-      final i = cleaned.indexOf('410C');
-      if (i >= 0 && cleaned.length >= i + 8) {
-        final a = int.parse(cleaned.substring(i + 4, i + 6), radix: 16);
-        final b = int.parse(cleaned.substring(i + 6, i + 8), radix: 16);
-        return ((256 * a + b) ~/ 4);
-      }
-      return 0;
+    // Ưu tiên cách giống Speed/Coolant: tìm '410C' trên chuỗi đã loại khoảng trắng
+    final cleaned = response.replaceAll(RegExp(r"\s+"), '');
+    final i = cleaned.indexOf('410C');
+    if (i >= 0 && cleaned.length >= i + 8) {
+      final a = int.parse(cleaned.substring(i + 4, i + 6), radix: 16);
+      final b = int.parse(cleaned.substring(i + 6, i + 8), radix: 16);
+      final v = ((256 * a + b) ~/ 4);
+      return v < 0 ? 0 : v;
     }
-    // spaced response handling
-    final ocIndex = parts.indexWhere((p) => p.toUpperCase() == '0C');
-    final a = int.parse(parts[ocIndex + 1], radix: 16);
-    final b = int.parse(parts[ocIndex + 2], radix: 16);
-    return ((256 * a + b) ~/ 4);
+    // Fallback: xử lý phản hồi có khoảng trắng '41 0C AA BB'
+    final parts = response.split(RegExp(r"\s+"));
+    for (int k = 0; k + 3 < parts.length; k++) {
+      if (parts[k].toUpperCase() == '41' && parts[k + 1].toUpperCase() == '0C') {
+        final a = int.parse(parts[k + 2], radix: 16);
+        final b = int.parse(parts[k + 3], radix: 16);
+        final v = ((256 * a + b) ~/ 4);
+        return v < 0 ? 0 : v;
+      }
+    }
+    return 0;
   }
 
   static int _parseSpeed(String response) {

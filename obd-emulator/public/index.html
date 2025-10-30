@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="vi">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -154,9 +154,13 @@
                         <div class="connection-info">
                             <span id="connectedClients">0</span> clients connected
                         </div>
+                        <button id="toggleLiveDataViewBtn" class="btn btn-small" title="Show all">
+                            <i class="fas fa-expand"></i>
+                            Show full
+                        </button>
                     </div>
                     
-                    <div class="live-data-grid">
+                    <div class="live-data-grid" id="liveDataGrid">
                         <!-- Core Metrics -->
                         <div class="data-card">
                             <div class="data-value" id="engineRPM">0</div>
