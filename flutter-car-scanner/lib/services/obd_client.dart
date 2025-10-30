@@ -23,6 +23,7 @@ class ObdClient {
     _enabledPids = {...pids};
   }
   bool _enabled(String pid) => _enabledPids.contains(pid);
+  Set<String> get enabledPids => _enabledPids;
 
   ObdClient({required this.host, required this.port});
 

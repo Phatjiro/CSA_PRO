@@ -29,6 +29,8 @@ class DashboardScreen extends StatefulWidget {
 }
 
 class _DashboardScreenState extends State<DashboardScreen> {
+  static const Duration _staleAfter = Duration(seconds: 2);
+  final Map<Metric, DateTime> _lastUpdated = <Metric, DateTime>{};
   ObdLiveData _data = const ObdLiveData(
     engineRpm: 0,
     vehicleSpeedKmh: 0,
@@ -124,6 +126,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     widget.client.dataStream.listen((event) {
       setState(() {
         _data = event;
+        _markUpdatedFromEnabledPids();
       });
     });
     // Ban đầu, chỉ bật các PIDs cho trang 1 (RPM, Speed, Coolant)
@@ -210,122 +213,123 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Widget _metricTile(Metric m) {
+    final stale = _isStale(m);
     switch (m) {
       case Metric.speed:
-        return _tile('Speed', '${_data.vehicleSpeedKmh}', unit: 'km/h');
+        return _tile('Speed', stale ? '—' : '${_data.vehicleSpeedKmh}', unit: 'km/h', stale: stale);
       case Metric.coolant:
-        return _coolantGauge(_data.coolantTempC);
+        return _coolantGauge(_data.coolantTempC, stale: stale);
       case Metric.intake:
-        return _tile('Intake temp', '${_data.intakeTempC}', unit: '°C');
+        return _tile('Intake temp', stale ? '—' : '${_data.intakeTempC}', unit: '°C', stale: stale);
       case Metric.throttle:
-        return _tile('Throttle', '${_data.throttlePositionPercent}', unit: '%');
+        return _tile('Throttle', stale ? '—' : '${_data.throttlePositionPercent}', unit: '%', stale: stale);
       case Metric.fuel:
-        return _tile('Fuel level', '${_data.fuelLevelPercent}', unit: '%');
+        return _tile('Fuel level', stale ? '—' : '${_data.fuelLevelPercent}', unit: '%', stale: stale);
       case Metric.load:
-        return _tile('Engine load', '${_data.engineLoadPercent}', unit: '%');
+        return _tile('Engine load', stale ? '—' : '${_data.engineLoadPercent}', unit: '%', stale: stale);
       case Metric.map:
-        return _tile('MAP', '${_data.mapKpa}', unit: 'kPa');
+        return _tile('MAP', stale ? '—' : '${_data.mapKpa}', unit: 'kPa', stale: stale);
       case Metric.baro:
-        return _tile('Baro', '${_data.baroKpa}', unit: 'kPa');
+        return _tile('Baro', stale ? '—' : '${_data.baroKpa}', unit: 'kPa', stale: stale);
       case Metric.maf:
-        return _tile('MAF', '${_data.mafGs}', unit: 'g/s');
+        return _tile('MAF', stale ? '—' : '${_data.mafGs}', unit: 'g/s', stale: stale);
       case Metric.voltage:
-        return _tile('Voltage', _format1(_data.voltageV), unit: 'V');
+        return _tile('Voltage', stale ? '—' : _format1(_data.voltageV), unit: 'V', stale: stale);
       case Metric.ambient:
-        return _tile('Ambient', '${_data.ambientTempC}', unit: '°C');
+        return _tile('Ambient', stale ? '—' : '${_data.ambientTempC}', unit: '°C', stale: stale);
       case Metric.lambda:
-        return _tile('Lambda', _format2(_data.lambda));
+        return _tile('Lambda', stale ? '—' : _format2(_data.lambda), stale: stale);
       case Metric.rpm:
-        return _rpmGauge(_data.engineRpm);
+        return _rpmGauge(_data.engineRpm, stale: stale);
       // Extended mappings
       case Metric.fuelSystemStatus:
-        return _tile('Fuel system status', '${_data.fuelSystemStatus}');
+        return _tile('Fuel system status', stale ? '—' : '${_data.fuelSystemStatus}', stale: stale);
       case Metric.timingAdvance:
-        return _tile('Timing advance', '${_data.timingAdvance}', unit: '°');
+        return _tile('Timing advance', stale ? '—' : '${_data.timingAdvance}', unit: '°', stale: stale);
       case Metric.runtimeSinceStart:
-        return _tile('Runtime since start', '${_data.runtimeSinceStart}', unit: 's');
+        return _tile('Runtime since start', stale ? '—' : '${_data.runtimeSinceStart}', unit: 's', stale: stale);
       case Metric.distanceWithMIL:
-        return _tile('Distance with MIL', '${_data.distanceWithMIL}', unit: 'km');
+        return _tile('Distance with MIL', stale ? '—' : '${_data.distanceWithMIL}', unit: 'km', stale: stale);
       case Metric.commandedPurge:
-        return _tile('Commanded purge', '${_data.commandedPurge}', unit: '%');
+        return _tile('Commanded purge', stale ? '—' : '${_data.commandedPurge}', unit: '%', stale: stale);
       case Metric.warmupsSinceClear:
-        return _tile('Warm-ups since clear', '${_data.warmupsSinceClear}');
+        return _tile('Warm-ups since clear', stale ? '—' : '${_data.warmupsSinceClear}', stale: stale);
       case Metric.distanceSinceClear:
-        return _tile('Distance since clear', '${_data.distanceSinceClear}', unit: 'km');
+        return _tile('Distance since clear', stale ? '—' : '${_data.distanceSinceClear}', unit: 'km', stale: stale);
       case Metric.catalystTemp:
-        return _tile('Catalyst temp', '${_data.catalystTemp}', unit: '°C');
+        return _tile('Catalyst temp', stale ? '—' : '${_data.catalystTemp}', unit: '°C', stale: stale);
       case Metric.absoluteLoad:
-        return _tile('Absolute load', '${_data.absoluteLoad}', unit: '%');
+        return _tile('Absolute load', stale ? '—' : '${_data.absoluteLoad}', unit: '%', stale: stale);
       case Metric.commandedEquivRatio:
-        return _tile('Commanded equiv ratio', _format2(_data.commandedEquivRatio));
+        return _tile('Commanded equiv ratio', stale ? '—' : _format2(_data.commandedEquivRatio), stale: stale);
       case Metric.relativeThrottle:
-        return _tile('Relative throttle', '${_data.relativeThrottle}', unit: '%');
+        return _tile('Relative throttle', stale ? '—' : '${_data.relativeThrottle}', unit: '%', stale: stale);
       case Metric.absoluteThrottleB:
-        return _tile('Absolute throttle B', '${_data.absoluteThrottleB}', unit: '%');
+        return _tile('Absolute throttle B', stale ? '—' : '${_data.absoluteThrottleB}', unit: '%', stale: stale);
       case Metric.absoluteThrottleC:
-        return _tile('Absolute throttle C', '${_data.absoluteThrottleC}', unit: '%');
+        return _tile('Absolute throttle C', stale ? '—' : '${_data.absoluteThrottleC}', unit: '%', stale: stale);
       case Metric.pedalPositionD:
-        return _tile('Pedal position D', '${_data.pedalPositionD}', unit: '%');
+        return _tile('Pedal position D', stale ? '—' : '${_data.pedalPositionD}', unit: '%', stale: stale);
       case Metric.pedalPositionE:
-        return _tile('Pedal position E', '${_data.pedalPositionE}', unit: '%');
+        return _tile('Pedal position E', stale ? '—' : '${_data.pedalPositionE}', unit: '%', stale: stale);
       case Metric.pedalPositionF:
-        return _tile('Pedal position F', '${_data.pedalPositionF}', unit: '%');
+        return _tile('Pedal position F', stale ? '—' : '${_data.pedalPositionF}', unit: '%', stale: stale);
       case Metric.commandedThrottleActuator:
-        return _tile('Throttle actuator', '${_data.commandedThrottleActuator}', unit: '%');
+        return _tile('Throttle actuator', stale ? '—' : '${_data.commandedThrottleActuator}', unit: '%', stale: stale);
       case Metric.timeRunWithMIL:
-        return _tile('Time run with MIL', '${_data.timeRunWithMIL}', unit: 's');
+        return _tile('Time run with MIL', stale ? '—' : '${_data.timeRunWithMIL}', unit: 's', stale: stale);
       case Metric.timeSinceCodesCleared:
-        return _tile('Time since codes cleared', '${_data.timeSinceCodesCleared}', unit: 's');
+        return _tile('Time since codes cleared', stale ? '—' : '${_data.timeSinceCodesCleared}', unit: 's', stale: stale);
       case Metric.maxEquivRatio:
-        return _tile('Max equiv ratio', _format2(_data.maxEquivRatio));
+        return _tile('Max equiv ratio', stale ? '—' : _format2(_data.maxEquivRatio), stale: stale);
       case Metric.maxAirFlow:
-        return _tile('Max air flow', '${_data.maxAirFlow}', unit: 'g/s');
+        return _tile('Max air flow', stale ? '—' : '${_data.maxAirFlow}', unit: 'g/s', stale: stale);
       case Metric.fuelType:
-        return _tile('Fuel type', '${_data.fuelType}');
+        return _tile('Fuel type', stale ? '—' : '${_data.fuelType}', stale: stale);
       case Metric.ethanolFuel:
-        return _tile('Ethanol fuel %', '${_data.ethanolFuel}', unit: '%');
+        return _tile('Ethanol fuel %', stale ? '—' : '${_data.ethanolFuel}', unit: '%', stale: stale);
       case Metric.absEvapPressure:
-        return _tile('Abs evap pressure', '${_data.absEvapPressure}', unit: 'kPa');
+        return _tile('Abs evap pressure', stale ? '—' : '${_data.absEvapPressure}', unit: 'kPa', stale: stale);
       case Metric.evapPressure:
-        return _tile('Evap pressure', '${_data.evapPressure}', unit: 'kPa');
+        return _tile('Evap pressure', stale ? '—' : '${_data.evapPressure}', unit: 'kPa', stale: stale);
       case Metric.shortTermO2Trim1:
-        return _tile('ST O2 trim 1', '${_data.shortTermO2Trim1}', unit: '%');
+        return _tile('ST O2 trim 1', stale ? '—' : '${_data.shortTermO2Trim1}', unit: '%', stale: stale);
       case Metric.longTermO2Trim1:
-        return _tile('LT O2 trim 1', '${_data.longTermO2Trim1}', unit: '%');
+        return _tile('LT O2 trim 1', stale ? '—' : '${_data.longTermO2Trim1}', unit: '%', stale: stale);
       case Metric.shortTermO2Trim2:
-        return _tile('ST O2 trim 2', '${_data.shortTermO2Trim2}', unit: '%');
+        return _tile('ST O2 trim 2', stale ? '—' : '${_data.shortTermO2Trim2}', unit: '%', stale: stale);
       case Metric.longTermO2Trim2:
-        return _tile('LT O2 trim 2', '${_data.longTermO2Trim2}', unit: '%');
+        return _tile('LT O2 trim 2', stale ? '—' : '${_data.longTermO2Trim2}', unit: '%', stale: stale);
       case Metric.shortTermO2Trim3:
-        return _tile('ST O2 trim 3', '${_data.shortTermO2Trim3}', unit: '%');
+        return _tile('ST O2 trim 3', stale ? '—' : '${_data.shortTermO2Trim3}', unit: '%', stale: stale);
       case Metric.longTermO2Trim3:
-        return _tile('LT O2 trim 3', '${_data.longTermO2Trim3}', unit: '%');
+        return _tile('LT O2 trim 3', stale ? '—' : '${_data.longTermO2Trim3}', unit: '%', stale: stale);
       case Metric.shortTermO2Trim4:
-        return _tile('ST O2 trim 4', '${_data.shortTermO2Trim4}', unit: '%');
+        return _tile('ST O2 trim 4', stale ? '—' : '${_data.shortTermO2Trim4}', unit: '%', stale: stale);
       case Metric.longTermO2Trim4:
-        return _tile('LT O2 trim 4', '${_data.longTermO2Trim4}', unit: '%');
+        return _tile('LT O2 trim 4', stale ? '—' : '${_data.longTermO2Trim4}', unit: '%', stale: stale);
       case Metric.catalystTemp1:
-        return _tile('Catalyst temp 1', '${_data.catalystTemp1}', unit: '°C');
+        return _tile('Catalyst temp 1', stale ? '—' : '${_data.catalystTemp1}', unit: '°C', stale: stale);
       case Metric.catalystTemp2:
-        return _tile('Catalyst temp 2', '${_data.catalystTemp2}', unit: '°C');
+        return _tile('Catalyst temp 2', stale ? '—' : '${_data.catalystTemp2}', unit: '°C', stale: stale);
       case Metric.catalystTemp3:
-        return _tile('Catalyst temp 3', '${_data.catalystTemp3}', unit: '°C');
+        return _tile('Catalyst temp 3', stale ? '—' : '${_data.catalystTemp3}', unit: '°C', stale: stale);
       case Metric.catalystTemp4:
-        return _tile('Catalyst temp 4', '${_data.catalystTemp4}', unit: '°C');
+        return _tile('Catalyst temp 4', stale ? '—' : '${_data.catalystTemp4}', unit: '°C', stale: stale);
       case Metric.fuelPressure:
-        return _tile('Fuel pressure', '${_data.fuelPressure}', unit: 'kPa');
+        return _tile('Fuel pressure', stale ? '—' : '${_data.fuelPressure}', unit: 'kPa', stale: stale);
       case Metric.shortTermFuelTrim1:
-        return _tile('ST fuel trim 1', '${_data.shortTermFuelTrim1}', unit: '%');
+        return _tile('ST fuel trim 1', stale ? '—' : '${_data.shortTermFuelTrim1}', unit: '%', stale: stale);
       case Metric.longTermFuelTrim1:
-        return _tile('LT fuel trim 1', '${_data.longTermFuelTrim1}', unit: '%');
+        return _tile('LT fuel trim 1', stale ? '—' : '${_data.longTermFuelTrim1}', unit: '%', stale: stale);
       case Metric.shortTermFuelTrim2:
-        return _tile('ST fuel trim 2', '${_data.shortTermFuelTrim2}', unit: '%');
+        return _tile('ST fuel trim 2', stale ? '—' : '${_data.shortTermFuelTrim2}', unit: '%', stale: stale);
       case Metric.longTermFuelTrim2:
-        return _tile('LT fuel trim 2', '${_data.longTermFuelTrim2}', unit: '%');
+        return _tile('LT fuel trim 2', stale ? '—' : '${_data.longTermFuelTrim2}', unit: '%', stale: stale);
     }
   }
 
-  Widget _tile(String title, String value, {String? unit}) {
+  Widget _tile(String title, String value, {String? unit, bool stale = false}) {
     return Container(
       margin: const EdgeInsets.all(8),
       decoration: BoxDecoration(
@@ -333,7 +337,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
         borderRadius: BorderRadius.circular(12),
       ),
       padding: const EdgeInsets.all(16),
-      child: Column(
+      child: Opacity(
+        opacity: stale ? 0.6 : 1,
+        child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
@@ -345,16 +351,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
           const Spacer(),
         ],
       ),
+    ),
     );
   }
 
   String _format1(double v) => v.toStringAsFixed(1);
   String _format2(double v) => v.toStringAsFixed(2);
 
-  Widget _rpmGauge(int rpm) {
+  Widget _rpmGauge(int rpm, {bool stale = false}) {
     return Padding(
       padding: const EdgeInsets.all(8),
-      child: SfRadialGauge(axes: <RadialAxis>[
+      child: Opacity(
+        opacity: stale ? 0.6 : 1,
+        child: SfRadialGauge(axes: <RadialAxis>[
         RadialAxis(
           minimum: 0,
           maximum: 7000,
@@ -367,18 +376,21 @@ class _DashboardScreenState extends State<DashboardScreen> {
             NeedlePointer(value: rpm.toDouble()),
           ],
           annotations: <GaugeAnnotation>[
-            GaugeAnnotation(widget: Text('$rpm', style: const TextStyle(fontSize: 24)), positionFactor: 0.75, angle: 90),
+            GaugeAnnotation(widget: Text(stale ? '—' : '$rpm', style: const TextStyle(fontSize: 24)), positionFactor: 0.75, angle: 90),
             const GaugeAnnotation(widget: Text('Engine RPM\nrpm', textAlign: TextAlign.center), angle: 90, positionFactor: 1.2),
           ],
         )
       ]),
+      ),
     );
   }
 
-  Widget _coolantGauge(int tempC) {
+  Widget _coolantGauge(int tempC, {bool stale = false}) {
     return Padding(
       padding: const EdgeInsets.all(8),
-      child: SfRadialGauge(axes: <RadialAxis>[
+      child: Opacity(
+        opacity: stale ? 0.6 : 1,
+        child: SfRadialGauge(axes: <RadialAxis>[
         RadialAxis(
           minimum: -20,
           maximum: 120,
@@ -390,11 +402,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
             NeedlePointer(value: tempC.toDouble()),
           ],
           annotations: <GaugeAnnotation>[
-            GaugeAnnotation(widget: Text('$tempC', style: const TextStyle(fontSize: 20)), positionFactor: 0.7, angle: 90),
+            GaugeAnnotation(widget: Text(stale ? '—' : '$tempC', style: const TextStyle(fontSize: 20)), positionFactor: 0.7, angle: 90),
             const GaugeAnnotation(widget: Text('Coolant temp.\n°C', textAlign: TextAlign.center), angle: 90, positionFactor: 1.22),
           ],
         )
       ]),
+      ),
     );
   }
 
@@ -570,6 +583,78 @@ class _DashboardScreenState extends State<DashboardScreen> {
     widget.client.setEnabledPids(pids);
   }
 
+  void _markUpdatedFromEnabledPids() {
+    final pids = widget.client.enabledPids;
+    final now = DateTime.now();
+    for (final pid in pids) {
+      final metric = _pidToMetric(pid);
+      if (metric != null) {
+        _lastUpdated[metric] = now;
+      }
+    }
+  }
+
+  Metric? _pidToMetric(String pid) {
+    switch (pid) {
+      case '010C': return Metric.rpm;
+      case '010D': return Metric.speed;
+      case '0105': return Metric.coolant;
+      case '010F': return Metric.intake;
+      case '0111': return Metric.throttle;
+      case '012F': return Metric.fuel;
+      case '0104': return Metric.load;
+      case '010B': return Metric.map;
+      case '0133': return Metric.baro;
+      case '0110': return Metric.maf;
+      case '0142': return Metric.voltage;
+      case '0146': return Metric.ambient;
+      case '015E': return Metric.lambda;
+      case '0103': return Metric.fuelSystemStatus;
+      case '010E': return Metric.timingAdvance;
+      case '011F': return Metric.runtimeSinceStart;
+      case '0121': return Metric.distanceWithMIL;
+      case '012E': return Metric.commandedPurge;
+      case '0130': return Metric.warmupsSinceClear;
+      case '0131': return Metric.distanceSinceClear;
+      case '013C': return Metric.catalystTemp;
+      case '0143': return Metric.absoluteLoad;
+      case '0144': return Metric.commandedEquivRatio;
+      case '0145': return Metric.relativeThrottle;
+      case '0147': return Metric.absoluteThrottleB;
+      case '0148': return Metric.absoluteThrottleC;
+      case '0149': return Metric.pedalPositionD;
+      case '014A': return Metric.pedalPositionE;
+      case '014B': return Metric.pedalPositionF;
+      case '014C': return Metric.commandedThrottleActuator;
+      case '014D': return Metric.timeRunWithMIL;
+      case '014E': return Metric.timeSinceCodesCleared;
+      case '014F': return Metric.maxEquivRatio;
+      case '0150': return Metric.maxAirFlow;
+      case '0151': return Metric.fuelType;
+      case '0152': return Metric.ethanolFuel;
+      case '0153': return Metric.absEvapPressure;
+      case '0154': return Metric.evapPressure;
+      case '0155': return Metric.shortTermO2Trim1;
+      case '0156': return Metric.longTermO2Trim1;
+      case '0157': return Metric.shortTermO2Trim2;
+      case '0158': return Metric.longTermO2Trim2;
+      case '0159': return Metric.shortTermO2Trim3;
+      case '015A': return Metric.longTermO2Trim3;
+      case '015B': return Metric.shortTermO2Trim4;
+      case '015C': return Metric.longTermO2Trim4;
+      case '015D': return Metric.catalystTemp1;
+      case '015F': return Metric.catalystTemp2;
+      case '0160': return Metric.catalystTemp3;
+      case '010A': return Metric.fuelPressure;
+    }
+    return null;
+  }
+
+  bool _isStale(Metric m) {
+    final t = _lastUpdated[m];
+    if (t == null) return true;
+    return DateTime.now().difference(t) > _staleAfter;
+  }
   Set<String> _metricsToPids(List<Metric> ms) {
     final set = <String>{};
     for (final m in ms) {

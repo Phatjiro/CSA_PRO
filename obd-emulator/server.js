@@ -469,6 +469,8 @@ function startTCPServer() {
   tcpServer = net.createServer((socket) => {
     console.log('Client connected:', socket.remoteAddress);
     connectedClients.push(socket);
+    // update clients count on web UI
+    try { io.emit('clients', connectedClients.length); } catch (e) {}
     
     socket.on('data', (data) => {
       const command = data.toString().trim().toUpperCase();
@@ -536,6 +538,8 @@ function startTCPServer() {
       
       socket.write(response);
       console.log('Sent response:', response);
+      // emit log to web UI
+      try { io.emit('log', { data: command, response }); } catch (e) {}
     });
     
     socket.on('close', () => {
@@ -544,6 +548,8 @@ function startTCPServer() {
       if (index > -1) {
         connectedClients.splice(index, 1);
       }
+      // update clients count on web UI
+      try { io.emit('clients', connectedClients.length); } catch (e) {}
     });
     
     socket.on('error', (err) => {
