@@ -176,6 +176,16 @@ const obdPids = {
   '010F': '41 0F 78', // Intake Air Temperature (38°C)
   '0110': '41 10 0F A0', // MAF Air Flow Rate
   '0111': '41 11 0A 8F', // Throttle Position
+  // O2 sensor voltages and short-term fuel trims
+  // A = voltage * 200 (V), B = short term fuel trim (% = B/1.28 - 100)
+  '0114': '41 14 96 80', // O2 B1S1: 0.75 V, 0%
+  '0115': '41 15 8C 7C', // O2 B1S2: 0.70 V, ~ -3%
+  '0116': '41 16 A0 82', // O2 B1S3: 0.80 V, ~ +1.6%
+  '0117': '41 17 00 80', // O2 B1S4: 0.00 V, 0% (unused)
+  '0118': '41 18 90 80', // O2 B2S1: 0.72 V, 0%
+  '0119': '41 19 88 84', // O2 B2S2: 0.68 V, ~ +3.1%
+  '011A': '41 1A 00 80', // O2 B2S3: unused
+  '011B': '41 1B 00 80', // O2 B2S4: unused
   '011C': '41 1C 01', // OBD Standards
   '011F': '41 1F 00 1F 40', // Run time since engine start
   '0121': '41 21 00 1F 40', // Distance traveled with MIL on

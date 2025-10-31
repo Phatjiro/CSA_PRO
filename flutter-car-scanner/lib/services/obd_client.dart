@@ -114,6 +114,41 @@ class ObdClient {
     }
   }
 
+  // PID 0142 Control module voltage: value = ((256*A)+B)/1000 V
+  Future<double?> readBatteryVoltage() async {
+    try {
+      final r = await _sendAndRead('0142');
+      final parts = r.trim().split(RegExp(r"\s+"));
+      if (parts.length < 4 || parts[0] != '41' || parts[1].toUpperCase() != '42') return null;
+      final a = int.parse(parts[2], radix: 16);
+      final b = int.parse(parts[3], radix: 16);
+      return ((256 * a) + b) / 1000.0;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  // O2 Sensor voltages PIDs 0114-011B: A=voltage(V*200), B=short term fuel trim (% = B/1.28 - 100)
+  Future<List<O2Reading>> readO2Sensors() async {
+    final readings = <O2Reading>[];
+    const pids = ['0114','0115','0116','0117','0118','0119','011A','011B'];
+    for (final pid in pids) {
+      try {
+        final r = await _sendAndRead(pid);
+        final parts = r.trim().split(RegExp(r"\s+"));
+        if (parts.length >= 4 && parts[0] == '41') {
+          final pidHex = parts[1].toUpperCase();
+          final a = int.parse(parts[2], radix: 16);
+          final b = int.parse(parts[3], radix: 16);
+          final voltage = a / 200.0; // V
+          final trim = (b / 1.28) - 100.0; // %
+          readings.add(O2Reading(pidHex: pidHex, voltage: voltage, shortTrimPercent: trim));
+        }
+      } catch (_) {}
+    }
+    return readings;
+  }
+
   // DTC commands
   Future<List<String>> readStoredDtc() async => _parseDtc(await _sendAndRead('03'));
   Future<List<String>> readPendingDtc() async => _parseDtc(await _sendAndRead('07'));
@@ -610,6 +645,13 @@ class ObdClient {
   // Helpers: clamp non-negative for PIDs that should not be negative
   static int _nnInt(int v) => v < 0 ? 0 : v;
   static double _nnDouble(double v) => v < 0 ? 0 : v;
+}
+
+class O2Reading {
+  final String pidHex;
+  final double voltage;
+  final double shortTrimPercent;
+  O2Reading({required this.pidHex, required this.voltage, required this.shortTrimPercent});
 }
 
 

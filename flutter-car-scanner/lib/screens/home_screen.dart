@@ -9,6 +9,8 @@ import 'emission_tests_screen.dart';
 import 'mode06_screen.dart';
 import 'logbook_screen.dart';
 import 'vehicle_info_screen.dart';
+import 'o2_test_screen.dart';
+import 'battery_detection_screen.dart';
 import 'live_data_select_screen.dart';
 import 'read_codes_screen.dart';
 import 'freeze_frame_screen.dart';
@@ -101,8 +103,8 @@ class _HomeScreenState extends State<HomeScreen> {
                     _Group('Specialized Features', const Color(0xFF9B59B6), Icons.security, [
                       _MenuItem(Icons.shield, 'Security Scan', _Action.placeholder),
                       _MenuItem(Icons.car_repair, 'Vehicle-Specific Data', _Action.placeholder),
-                      _MenuItem(Icons.bubble_chart, 'O2 Test', _Action.placeholder),
-                      _MenuItem(Icons.battery_full, 'Battery Detection', _Action.placeholder),
+                      _MenuItem(Icons.bubble_chart, 'O2 Test', _Action.openO2Test),
+                      _MenuItem(Icons.battery_full, 'Battery Detection', _Action.openBatteryDetection),
                     ]),
                   ];
 
@@ -239,7 +241,7 @@ class _MenuTile extends StatelessWidget {
   }
 }
 
-enum _Action { openDashboard, openLiveData, openAcceleration, openEmission, openReadCodes, openFreezeFrame, openMilStatus, openMode06, openLogbook, openVehicleInfo, openPlaceholder, placeholder }
+enum _Action { openDashboard, openLiveData, openAcceleration, openEmission, openReadCodes, openFreezeFrame, openMilStatus, openMode06, openLogbook, openVehicleInfo, openO2Test, openBatteryDetection, openPlaceholder, placeholder }
 
 class _Section extends StatelessWidget {
   final String title;
@@ -356,6 +358,26 @@ class _Section extends StatelessWidget {
                         break;
                       case _Action.openVehicleInfo:
                         Navigator.of(context).push(MaterialPageRoute(builder: (_) => const VehicleInfoScreen()));
+                        break;
+                      case _Action.openO2Test:
+                        final clientO2 = ConnectionManager.instance.client;
+                        if (clientO2 == null) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Not connected. Please CONNECT first.')),
+                          );
+                          return;
+                        }
+                        Navigator.of(context).push(MaterialPageRoute(builder: (_) => const O2TestScreen()));
+                        break;
+                      case _Action.openBatteryDetection:
+                        final clientBat = ConnectionManager.instance.client;
+                        if (clientBat == null) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Not connected. Please CONNECT first.')),
+                          );
+                          return;
+                        }
+                        Navigator.of(context).push(MaterialPageRoute(builder: (_) => const BatteryDetectionScreen()));
                         break;
                       case _Action.openLogbook:
                         Navigator.of(context).push(MaterialPageRoute(builder: (_) => const LogbookScreen()));
@@ -568,6 +590,26 @@ class _GroupCard extends StatelessWidget {
                               break;
                             case _Action.openVehicleInfo:
                               Navigator.of(context).push(MaterialPageRoute(builder: (_) => const VehicleInfoScreen()));
+                              break;
+                            case _Action.openO2Test:
+                              final clientO2 = ConnectionManager.instance.client;
+                              if (clientO2 == null) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(content: Text('Not connected. Please CONNECT first.')),
+                                );
+                                return;
+                              }
+                              Navigator.of(context).push(MaterialPageRoute(builder: (_) => const O2TestScreen()));
+                              break;
+                            case _Action.openBatteryDetection:
+                              final clientBat = ConnectionManager.instance.client;
+                              if (clientBat == null) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(content: Text('Not connected. Please CONNECT first.')),
+                                );
+                                return;
+                              }
+                              Navigator.of(context).push(MaterialPageRoute(builder: (_) => const BatteryDetectionScreen()));
                               break;
                             case _Action.openLogbook:
                               Navigator.of(context).push(MaterialPageRoute(builder: (_) => const LogbookScreen()));
@@ -821,6 +863,26 @@ void _openGroupChooser(BuildContext context, _Group g) {
                             break;
                           case _Action.openVehicleInfo:
                             Navigator.of(context).push(MaterialPageRoute(builder: (_) => const VehicleInfoScreen()));
+                            break;
+                          case _Action.openO2Test:
+                            final clientO2 = ConnectionManager.instance.client;
+                            if (clientO2 == null) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text('Not connected. Please CONNECT first.')),
+                              );
+                              return;
+                            }
+                            Navigator.of(context).push(MaterialPageRoute(builder: (_) => const O2TestScreen()));
+                            break;
+                          case _Action.openBatteryDetection:
+                            final clientBat = ConnectionManager.instance.client;
+                            if (clientBat == null) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text('Not connected. Please CONNECT first.')),
+                              );
+                              return;
+                            }
+                            Navigator.of(context).push(MaterialPageRoute(builder: (_) => const BatteryDetectionScreen()));
                             break;
                           case _Action.openLogbook:
                             Navigator.of(context).push(MaterialPageRoute(builder: (_) => const LogbookScreen()));

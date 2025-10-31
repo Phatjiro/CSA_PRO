@@ -47,6 +47,19 @@ Core PIDs (Mode 01)
 | 0154 | Evap System Vapor Pressure | p = 256×A + B | (A,B) = round(p) | Pa/kPa | per definition |
 | 015E | O2 Sensor 1 λ (equiv. ratio) | λ = ((256×A)+B)/32768 | (A,B) = round(λ×32768) | ratio | ≈0.7–2.0 |
 
+O2 Sensors (Mode 01)
+
+| PID  | Name | App decoding formula | Emulator encoding formula | Unit | Notes |
+|------|------|----------------------|---------------------------|------|-------|
+| 0114 | O2 B1S1 (voltage, STFT) | V = A/200; STFT = B/1.28 − 100 | A = round(V×200); B = round((STFT+100)×1.28) | V, % | Bank1 Sensor1 |
+| 0115 | O2 B1S2 (voltage, STFT) | V = A/200; STFT = B/1.28 − 100 | A = round(V×200); B = round((STFT+100)×1.28) | V, % | Bank1 Sensor2 |
+| 0116 | O2 B1S3 (voltage, STFT) | V = A/200; STFT = B/1.28 − 100 | A = round(V×200); B = round((STFT+100)×1.28) | V, % | Bank1 Sensor3 |
+| 0117 | O2 B1S4 (voltage, STFT) | V = A/200; STFT = B/1.28 − 100 | A = round(V×200); B = round((STFT+100)×1.28) | V, % | Bank1 Sensor4 |
+| 0118 | O2 B2S1 (voltage, STFT) | V = A/200; STFT = B/1.28 − 100 | A = round(V×200); B = round((STFT+100)×1.28) | V, % | Bank2 Sensor1 |
+| 0119 | O2 B2S2 (voltage, STFT) | V = A/200; STFT = B/1.28 − 100 | A = round(V×200); B = round((STFT+100)×1.28) | V, % | Bank2 Sensor2 |
+| 011A | O2 B2S3 (voltage, STFT) | V = A/200; STFT = B/1.28 − 100 | A = round(V×200); B = round((STFT+100)×1.28) | V, % | Bank2 Sensor3 |
+| 011B | O2 B2S4 (voltage, STFT) | V = A/200; STFT = B/1.28 − 100 | A = round(V×200); B = round((STFT+100)×1.28) | V, % | Bank2 Sensor4 |
+
 Catalyst Temperatures (Mode 01)
 
 | PID  | Name | App decoding formula | Emulator encoding formula | Unit | Notes |
