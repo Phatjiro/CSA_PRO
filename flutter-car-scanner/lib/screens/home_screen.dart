@@ -8,6 +8,7 @@ import 'acceleration_tests_screen.dart';
 import 'emission_tests_screen.dart';
 import 'mode06_screen.dart';
 import 'logbook_screen.dart';
+import 'vehicle_info_screen.dart';
 import 'live_data_select_screen.dart';
 import 'read_codes_screen.dart';
 import 'freeze_frame_screen.dart';
@@ -84,7 +85,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       _MenuItem(Icons.build, 'Service Tools', _Action.placeholder),
                       _MenuItem(Icons.science, 'Emission Tools', _Action.openEmission),
                       _MenuItem(Icons.fact_check, 'Emission Check', _Action.placeholder),
-                      _MenuItem(Icons.directions_car_filled, 'Vehicle Info', _Action.placeholder),
+                      _MenuItem(Icons.directions_car_filled, 'Vehicle Info', _Action.openVehicleInfo),
                     ]),
                     _Group('Smart Features', const Color(0xFF7D3C98), Icons.psychology, [
                       _MenuItem(Icons.support_agent, 'AI Mechanic', _Action.placeholder),
@@ -238,7 +239,7 @@ class _MenuTile extends StatelessWidget {
   }
 }
 
-enum _Action { openDashboard, openLiveData, openAcceleration, openEmission, openReadCodes, openFreezeFrame, openMilStatus, openMode06, openLogbook, openPlaceholder, placeholder }
+enum _Action { openDashboard, openLiveData, openAcceleration, openEmission, openReadCodes, openFreezeFrame, openMilStatus, openMode06, openLogbook, openVehicleInfo, openPlaceholder, placeholder }
 
 class _Section extends StatelessWidget {
   final String title;
@@ -352,6 +353,9 @@ class _Section extends StatelessWidget {
                         break;
                       case _Action.openLogbook:
                         Navigator.of(context).push(MaterialPageRoute(builder: (_) => const LogbookScreen()));
+                        break;
+                      case _Action.openVehicleInfo:
+                        Navigator.of(context).push(MaterialPageRoute(builder: (_) => const VehicleInfoScreen()));
                         break;
                       case _Action.openLogbook:
                         Navigator.of(context).push(MaterialPageRoute(builder: (_) => const LogbookScreen()));
@@ -561,6 +565,9 @@ class _GroupCard extends StatelessWidget {
                               break;
                             case _Action.openMilStatus:
                               Navigator.of(context).push(MaterialPageRoute(builder: (_) => const MilStatusScreen()));
+                              break;
+                            case _Action.openVehicleInfo:
+                              Navigator.of(context).push(MaterialPageRoute(builder: (_) => const VehicleInfoScreen()));
                               break;
                             case _Action.openLogbook:
                               Navigator.of(context).push(MaterialPageRoute(builder: (_) => const LogbookScreen()));
@@ -811,6 +818,9 @@ void _openGroupChooser(BuildContext context, _Group g) {
                             break;
                           case _Action.openMilStatus:
                             Navigator.of(context).push(MaterialPageRoute(builder: (_) => const MilStatusScreen()));
+                            break;
+                          case _Action.openVehicleInfo:
+                            Navigator.of(context).push(MaterialPageRoute(builder: (_) => const VehicleInfoScreen()));
                             break;
                           case _Action.openLogbook:
                             Navigator.of(context).push(MaterialPageRoute(builder: (_) => const LogbookScreen()));

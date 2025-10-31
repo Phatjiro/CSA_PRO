@@ -72,6 +72,48 @@ class ObdClient {
     return (value, min, max);
   }
 
+  // Mode 09 – Vehicle Information (basic VIN read). Works on real ELM/vehicle.
+  Future<String?> readVin() async {
+    try {
+      final r = await _sendAndRead('0902');
+      final cleaned = r.replaceAll(RegExp(r"\s+"), '').toUpperCase();
+      if (!cleaned.contains('4902')) return null;
+      // Collect all hex byte pairs after occurrences of 4902xx (skip record index if present)
+      final bytes = <int>[];
+      int idx = 0;
+      while (true) {
+        final i = cleaned.indexOf('4902', idx);
+        if (i < 0 || i + 4 >= cleaned.length) break;
+        int p = i + 4;
+        // Some ECUs send 4902 + recordId (2 hex) before data
+        // Try skipping 2 hex for record id if the next is two hex digits
+        if (p + 2 <= cleaned.length) {
+          // peek two chars as record id
+          p += 2;
+        }
+        // Read until next 49 (start of another frame) or end
+        while (p + 2 <= cleaned.length) {
+          if (cleaned.startsWith('49', p)) break;
+          final pair = cleaned.substring(p, p + 2);
+          final b = int.tryParse(pair, radix: 16);
+          if (b == null) break;
+          bytes.add(b);
+          p += 2;
+        }
+        idx = p;
+      }
+      if (bytes.isEmpty) return null;
+      final chars = bytes
+          .where((b) => b >= 32 && b <= 126)
+          .map((b) => String.fromCharCode(b))
+          .join()
+          .trim();
+      return chars.isEmpty ? null : chars;
+    } catch (_) {
+      return null;
+    }
+  }
+
   // DTC commands
   Future<List<String>> readStoredDtc() async => _parseDtc(await _sendAndRead('03'));
   Future<List<String>> readPendingDtc() async => _parseDtc(await _sendAndRead('07'));
