@@ -58,7 +58,7 @@ class _ConnectScreenState extends State<ConnectScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Kết nối qua Wi‑Fi (TCP ELM327)',
+            const Text('Connect via Wi‑Fi (TCP ELM327)',
                 style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
             const SizedBox(height: 12),
             TextField(

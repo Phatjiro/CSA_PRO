@@ -58,7 +58,7 @@ class _EmissionTestsScreenState extends State<EmissionTestsScreen> {
         child: _isLoading && _items.isEmpty
             ? const Center(child: CircularProgressIndicator())
             : (_items.isEmpty
-                ? const Center(child: Text('Không có dữ liệu readiness'))
+                ? const Center(child: Text('No readiness data'))
                 : ListView.separated(
                     padding: const EdgeInsets.only(bottom: 12),
                     itemCount: _items.length,

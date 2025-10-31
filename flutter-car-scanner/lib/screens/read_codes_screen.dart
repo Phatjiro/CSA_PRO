@@ -10,7 +10,7 @@ class ReadCodesScreen extends StatefulWidget {
 }
 
 class _ReadCodesScreenState extends State<ReadCodesScreen> with SingleTickerProviderStateMixin {
-  late final ObdClient _client;
+  ObdClient? _client;
   late final TabController _tab;
   bool _loading = false;
   bool _milOn = false;
@@ -18,34 +18,63 @@ class _ReadCodesScreenState extends State<ReadCodesScreen> with SingleTickerProv
   List<String> _stored = [];
   List<String> _pending = [];
   List<String> _permanent = [];
+  String? _errorMessage;
 
   @override
   void initState() {
     super.initState();
-    _client = ConnectionManager.instance.client!;
+    _client = ConnectionManager.instance.client;
     _tab = TabController(length: 3, vsync: this);
-    _refreshAll();
+    if (_client != null) {
+      _refreshAll();
+    } else {
+      _errorMessage = 'Not connected. Please CONNECT first.';
+    }
   }
 
   Future<void> _refreshAll() async {
-    setState(() => _loading = true);
-    try {
-      final mil = await _client.readMilAndCount();
-      final stored = await _client.readStoredDtc();
-      final pending = await _client.readPendingDtc();
-      final permanent = await _client.readPermanentDtc();
+    if (_client == null) {
       setState(() {
-        _milOn = mil.$1;
-        _count = mil.$2;
-        _stored = stored;
-        _pending = pending;
-        _permanent = permanent;
+        _errorMessage = 'Not connected. Please CONNECT first.';
       });
-    } catch (_) {}
-    setState(() => _loading = false);
+      return;
+    }
+    setState(() {
+      _loading = true;
+      _errorMessage = null;
+    });
+    try {
+      final mil = await _client!.readMilAndCount();
+      final stored = await _client!.readStoredDtc();
+      final pending = await _client!.readPendingDtc();
+      final permanent = await _client!.readPermanentDtc();
+      if (mounted) {
+        setState(() {
+          _milOn = mil.$1;
+          _count = mil.$2;
+          _stored = stored;
+          _pending = pending;
+          _permanent = permanent;
+          _loading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _errorMessage = 'Error reading DTC: ${e.toString()}';
+          _loading = false;
+        });
+      }
+    }
   }
 
   Future<void> _clear() async {
+    if (_client == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Not connected. Please CONNECT first.')),
+      );
+      return;
+    }
     final ok = await showDialog<bool>(context: context, builder: (ctx) => AlertDialog(
       title: const Text('Clear DTCs?'),
       content: const Text('This will turn off MIL (if no codes reappear) and reset readiness.'),
@@ -55,9 +84,21 @@ class _ReadCodesScreenState extends State<ReadCodesScreen> with SingleTickerProv
       ],
     )) ?? false;
     if (!ok) return;
-    setState(() => _loading = true);
-    try { await _client.clearDtc(); } catch (_) {}
-    await _refreshAll();
+    setState(() {
+      _loading = true;
+      _errorMessage = null;
+    });
+    try {
+      await _client!.clearDtc();
+      await _refreshAll();
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _errorMessage = 'Error clearing DTC: ${e.toString()}';
+          _loading = false;
+        });
+      }
+    }
   }
 
   @override
@@ -95,15 +136,58 @@ class _ReadCodesScreenState extends State<ReadCodesScreen> with SingleTickerProv
               ],
             ),
           ),
-          Expanded(
-            child: TabBarView(
-              controller: _tab,
-              children: [
-                _buildList(_stored, 'Stored'),
-                _buildList(_pending, 'Pending'),
-                _buildList(_permanent, 'Permanent'),
-              ],
+          if (_errorMessage != null)
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(16),
+              margin: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.red.withOpacity(0.2),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.redAccent, width: 1),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.error_outline, color: Colors.redAccent),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      _errorMessage!,
+                      style: const TextStyle(color: Colors.white),
+                    ),
+                  ),
+                ],
+              ),
             ),
+          Expanded(
+            child: _errorMessage != null && _client == null
+                ? Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(Icons.wifi_off, size: 64, color: Colors.white54),
+                        const SizedBox(height: 16),
+                        const Text(
+                          'Not connected',
+                          style: TextStyle(color: Colors.white70, fontSize: 18),
+                        ),
+                        const SizedBox(height: 8),
+                        const Text(
+                          'Please CONNECT before using this feature',
+                          style: TextStyle(color: Colors.white54, fontSize: 14),
+                          textAlign: TextAlign.center,
+                        ),
+                      ],
+                    ),
+                  )
+                : TabBarView(
+                    controller: _tab,
+                    children: [
+                      _buildList(_stored, 'Stored'),
+                      _buildList(_pending, 'Pending'),
+                      _buildList(_permanent, 'Permanent'),
+                    ],
+                  ),
           )
         ],
       ),
@@ -117,9 +201,8 @@ class _ReadCodesScreenState extends State<ReadCodesScreen> with SingleTickerProv
     if (codes.isEmpty) {
       return Center(child: Text('NO DATA ($type)', style: const TextStyle(color: Colors.white54)));
     }
-    return ListView.separated(
+    return ListView.builder(
       itemCount: codes.length,
-      separatorBuilder: (_, __) => const Divider(height: 1, color: Colors.white12),
       padding: const EdgeInsets.symmetric(vertical: 8),
       itemBuilder: (context, index) {
         final dtcCode = codes[index];
@@ -129,55 +212,81 @@ class _ReadCodesScreenState extends State<ReadCodesScreen> with SingleTickerProv
         return Card(
           margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
           color: Colors.white.withOpacity(0.08),
-          child: ListTile(
-            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            leading: const Icon(Icons.error_outline, color: Colors.redAccent, size: 28),
-            title: Text(
-              dtcCode,
-              style: const TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 18,
-                color: Colors.white,
-              ),
-            ),
-            subtitle: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const SizedBox(height: 4),
-                Text(
-                  description,
-                  style: const TextStyle(
-                    color: Colors.white70,
-                    fontSize: 14,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  howToRead,
-                  style: TextStyle(
-                    color: Colors.white54,
-                    fontSize: 12,
-                    fontStyle: FontStyle.italic,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Row(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: () => DtcHelper.searchOnGoogle(dtcCode),
+              borderRadius: BorderRadius.circular(12),
+              splashColor: Colors.white.withOpacity(0.1),
+              highlightColor: Colors.white.withOpacity(0.05),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Icon(Icons.info_outline, size: 14, color: Colors.white54),
-                    const SizedBox(width: 4),
-                    Text(
-                      'Tap to search on Google',
-                      style: TextStyle(
-                        color: Colors.white54,
-                        fontSize: 11,
+                    const Icon(Icons.error_outline, color: Colors.redAccent, size: 28),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  dtcCode,
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 18,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ),
+                              const Icon(Icons.search, color: Colors.white54, size: 20),
+                            ],
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            description,
+                            style: const TextStyle(
+                              color: Colors.white70,
+                              fontSize: 14,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            howToRead,
+                            style: TextStyle(
+                              color: Colors.white54,
+                              fontSize: 12,
+                              fontStyle: FontStyle.italic,
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          Row(
+                            children: [
+                              Icon(Icons.info_outline, size: 14, color: Colors.white54),
+                              const SizedBox(width: 4),
+                              Text(
+                                'Tap to search on Google',
+                                style: TextStyle(
+                                  color: Colors.white54,
+                                  fontSize: 11,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
                       ),
                     ),
                   ],
                 ),
-              ],
+              ),
             ),
-            onTap: () => DtcHelper.searchOnGoogle(dtcCode),
-            trailing: const Icon(Icons.search, color: Colors.white54),
           ),
         );
       },

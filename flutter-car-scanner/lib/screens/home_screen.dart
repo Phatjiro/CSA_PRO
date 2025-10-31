@@ -245,7 +245,7 @@ class _Section extends StatelessWidget {
                         final client = ConnectionManager.instance.client;
                         if (client == null) {
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Chưa kết nối. Hãy CONNECT trước.')),
+                            const SnackBar(content: Text('Not connected. Please CONNECT first.')),
                           );
                           return;
                         }
@@ -255,7 +255,7 @@ class _Section extends StatelessWidget {
                         final client = ConnectionManager.instance.client;
                         if (client == null) {
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Chưa kết nối. Hãy CONNECT trước.')),
+                            const SnackBar(content: Text('Not connected. Please CONNECT first.')),
                           );
                           return;
                         }
@@ -265,7 +265,7 @@ class _Section extends StatelessWidget {
                         final clientA = ConnectionManager.instance.client;
                         if (clientA == null) {
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Chưa kết nối. Hãy CONNECT trước.')),
+                            const SnackBar(content: Text('Not connected. Please CONNECT first.')),
                           );
                           return;
                         }
@@ -275,13 +275,20 @@ class _Section extends StatelessWidget {
                         final clientE = ConnectionManager.instance.client;
                         if (clientE == null) {
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Chưa kết nối. Hãy CONNECT trước.')),
+                            const SnackBar(content: Text('Not connected. Please CONNECT first.')),
                           );
                           return;
                         }
                         Navigator.of(context).push(MaterialPageRoute(builder: (_) => const EmissionTestsScreen()));
                         break;
                       case _Action.openReadCodes:
+                        final clientR = ConnectionManager.instance.client;
+                        if (clientR == null) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Not connected. Please CONNECT first.')),
+                          );
+                          return;
+                        }
                         Navigator.of(context).push(MaterialPageRoute(builder: (_) => const ReadCodesScreen()));
                         break;
                       case _Action.openPlaceholder:
@@ -405,7 +412,7 @@ class _GroupCard extends StatelessWidget {
                               final client = ConnectionManager.instance.client;
                               if (client == null) {
                                 ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(content: Text('Chưa kết nối. Hãy CONNECT trước.')),
+                                  const SnackBar(content: Text('Not connected. Please CONNECT first.')),
                                 );
                                 return;
                               }
@@ -415,7 +422,7 @@ class _GroupCard extends StatelessWidget {
                               final client = ConnectionManager.instance.client;
                               if (client == null) {
                                 ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(content: Text('Chưa kết nối. Hãy CONNECT trước.')),
+                                  const SnackBar(content: Text('Not connected. Please CONNECT first.')),
                                 );
                                 return;
                               }
@@ -425,7 +432,7 @@ class _GroupCard extends StatelessWidget {
                               final clientA = ConnectionManager.instance.client;
                               if (clientA == null) {
                                 ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(content: Text('Chưa kết nối. Hãy CONNECT trước.')),
+                                  const SnackBar(content: Text('Not connected. Please CONNECT first.')),
                                 );
                                 return;
                               }
@@ -435,7 +442,7 @@ class _GroupCard extends StatelessWidget {
                               final clientE = ConnectionManager.instance.client;
                               if (clientE == null) {
                                 ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(content: Text('Chưa kết nối. Hãy CONNECT trước.')),
+                                  const SnackBar(content: Text('Not connected. Please CONNECT first.')),
                                 );
                                 return;
                               }
@@ -643,7 +650,7 @@ void _openGroupChooser(BuildContext context, _Group g) {
                             final client = ConnectionManager.instance.client;
                             if (client == null) {
                               ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text('Chưa kết nối. Hãy CONNECT trước.')),
+                                const SnackBar(content: Text('Not connected. Please CONNECT first.')),
                               );
                               return;
                             }
@@ -653,7 +660,7 @@ void _openGroupChooser(BuildContext context, _Group g) {
                             final client = ConnectionManager.instance.client;
                             if (client == null) {
                               ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text('Chưa kết nối. Hãy CONNECT trước.')),
+                                const SnackBar(content: Text('Not connected. Please CONNECT first.')),
                               );
                               return;
                             }
@@ -663,7 +670,7 @@ void _openGroupChooser(BuildContext context, _Group g) {
                             final clientA = ConnectionManager.instance.client;
                             if (clientA == null) {
                               ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text('Chưa kết nối. Hãy CONNECT trước.')),
+                                const SnackBar(content: Text('Not connected. Please CONNECT first.')),
                               );
                               return;
                             }
@@ -673,7 +680,7 @@ void _openGroupChooser(BuildContext context, _Group g) {
                             final clientE = ConnectionManager.instance.client;
                             if (clientE == null) {
                               ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text('Chưa kết nối. Hãy CONNECT trước.')),
+                                const SnackBar(content: Text('Not connected. Please CONNECT first.')),
                               );
                               return;
                             }
