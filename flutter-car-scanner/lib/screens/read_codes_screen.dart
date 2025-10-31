@@ -113,7 +113,10 @@ class _ReadCodesScreenState extends State<ReadCodesScreen> with SingleTickerProv
         foregroundColor: Colors.white,
         actions: [
           IconButton(icon: const Icon(Icons.refresh), onPressed: _loading ? null : _refreshAll),
-          TextButton(onPressed: _loading ? null : _clear, child: const Text('Clear', style: TextStyle(color: Colors.white)))
+          TextButton(
+            onPressed: _loading ? null : _clear,
+            child: const Text('Clear', style: TextStyle(color: Colors.white)),
+          ),
         ],
       ),
       body: Column(

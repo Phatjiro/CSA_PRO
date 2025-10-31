@@ -67,8 +67,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 builder: (context, constraints) {
                   final groups = <_Group>[
                     _Group('Basic Diagnostics', const Color(0xFF1E88E5), Icons.health_and_safety, [
-                      _MenuItem(Icons.bug_report, 'Read Codes', _Action.openReadCodes),
-                      _MenuItem(Icons.cleaning_services, 'Clear Codes', _Action.openReadCodes),
+                      _MenuItem(Icons.bug_report, 'Read & Clear Codes', _Action.openReadCodes),
                       _MenuItem(Icons.save_alt, 'Freeze Frame', _Action.openPlaceholder),
                       _MenuItem(Icons.warning_amber, 'MIL Status', _Action.openPlaceholder),
                     ]),

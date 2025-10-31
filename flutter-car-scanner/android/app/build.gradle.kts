@@ -8,7 +8,8 @@ plugins {
 android {
     namespace = "com.example.flutter_car_scanner"
     compileSdk = flutter.compileSdkVersion
-    ndkVersion = flutter.ndkVersion
+    // Override to satisfy plugins requiring NDK 27.0.12077973
+    ndkVersion = "27.0.12077973"
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
