@@ -109,21 +109,30 @@ class _ReadCodesScreenState extends State<ReadCodesScreen> with SingleTickerProv
     return Scaffold(
       appBar: AppBar(
         title: const Text('Read Codes'),
+        backgroundColor: const Color(0xFF1E88E5), // Blue - matches Basic Diagnostics group
+        foregroundColor: Colors.white,
         actions: [
           IconButton(icon: const Icon(Icons.refresh), onPressed: _loading ? null : _refreshAll),
           TextButton(onPressed: _loading ? null : _clear, child: const Text('Clear', style: TextStyle(color: Colors.white)))
         ],
-        bottom: TabBar(
-          controller: _tab,
-          tabs: const [
-            Tab(text: 'Stored'),
-            Tab(text: 'Pending'),
-            Tab(text: 'Permanent'),
-          ],
-        ),
       ),
       body: Column(
         children: [
+          // Move TabBar out of AppBar so tabs are not inside the blue header
+          Container(
+            color: Colors.transparent,
+            child: TabBar(
+              controller: _tab,
+              tabs: const [
+                Tab(text: 'Stored'),
+                Tab(text: 'Pending'),
+                Tab(text: 'Permanent'),
+              ],
+              labelColor: Colors.white,
+              unselectedLabelColor: Colors.white70,
+              indicatorColor: Colors.white,
+            ),
+          ),
           Container(
             width: double.infinity,
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),

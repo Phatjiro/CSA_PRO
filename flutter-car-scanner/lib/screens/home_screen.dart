@@ -8,14 +8,57 @@ import 'acceleration_tests_screen.dart';
 import 'emission_tests_screen.dart';
 import 'live_data_select_screen.dart';
 import 'read_codes_screen.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import '../utils/prefs_keys.dart';
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
+
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  bool _showAll = true; // default show all per request
+
+  @override
+  void initState() {
+    super.initState();
+    _loadPrefs();
+  }
+
+  Future<void> _loadPrefs() async {
+    final prefs = await SharedPreferences.getInstance();
+    final saved = prefs.getBool(PrefsKeys.homeShowAll);
+    if (saved != null) {
+      setState(() => _showAll = saved);
+    }
+  }
+
+  Future<void> _toggleMode() async {
+    setState(() => _showAll = !_showAll);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(PrefsKeys.homeShowAll, _showAll);
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Car Scanner')),
+      appBar: AppBar(
+        title: const Text('Car Scanner'),
+        actions: [
+          IconButton(
+            tooltip: 'Settings',
+            icon: const Icon(Icons.settings),
+            onPressed: () {}, // placeholder
+          ),
+          IconButton(
+            tooltip: _showAll ? 'Show groups' : 'Show all',
+            icon: Icon(_showAll ? Icons.view_module : Icons.view_list),
+            onPressed: _toggleMode,
+          ),
+        ],
+      ),
       body: SafeArea(
         child: Column(
           children: [
@@ -59,6 +102,16 @@ class HomeScreen extends StatelessWidget {
                     ]),
                   ];
 
+                  if (_showAll) {
+                    return ListView.builder(
+                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+                      itemCount: groups.length,
+                      itemBuilder: (context, index) {
+                        final g = groups[index];
+                        return _Section(title: g.title, color: g.color, items: g.items);
+                      },
+                    );
+                  }
                   return _RadialMenu(groups: groups);
                 },
               ),
@@ -145,13 +198,13 @@ class _MenuTile extends StatelessWidget {
             ),
           ],
         ),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
             Container(
-              width: 44,
-              height: 44,
+              width: 40,
+              height: 40,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 gradient: LinearGradient(
@@ -163,14 +216,17 @@ class _MenuTile extends StatelessWidget {
               ),
               child: Icon(item.icon, size: 24, color: Colors.white),
             ),
-            const SizedBox(height: 10),
-            Text(
-              item.title,
-              textAlign: TextAlign.center,
-              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
-              maxLines: 2,
-              softWrap: true,
-              overflow: TextOverflow.ellipsis,
+            const SizedBox(height: 8),
+            SizedBox(
+              height: 32, // reserve space for up to 2 lines
+              child: Text(
+                item.title,
+                textAlign: TextAlign.center,
+                style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                maxLines: 2,
+                softWrap: true,
+                overflow: TextOverflow.ellipsis,
+              ),
             ),
           ],
         ),
@@ -228,10 +284,10 @@ class _Section extends StatelessWidget {
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
               gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 3,
-                mainAxisSpacing: 10,
-                crossAxisSpacing: 10,
-                childAspectRatio: 0.98,
+                crossAxisCount: 2,
+                mainAxisSpacing: 8,
+                crossAxisSpacing: 8,
+                childAspectRatio: 1.3,
               ),
               itemCount: items.length,
               itemBuilder: (context, index) {
