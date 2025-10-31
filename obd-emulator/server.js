@@ -21,6 +21,73 @@ const dtcState = {
   milOn: true,
 };
 
+// --- Freeze Frame State ---
+// Store encoded responses for selected Mode 01 PIDs at the moment of capture
+// e.g. { '010C': '41 0C 1F 40', '010D': '41 0D 40', ... }
+let freezeFrame = null;
+
+function captureFreezeFrameFromCurrent() {
+  const selected = ['010C','010D','0105','010F','0110','0111'];
+  const snap = {};
+  for (const pid of selected) {
+    if (obdPids[pid]) snap[pid] = obdPids[pid];
+  }
+  freezeFrame = snap;
+  return freezeFrame;
+}
+
+function clearFreezeFrame() {
+  freezeFrame = null;
+}
+
+function formatFreezeFrameResponse(cmd) {
+  // cmd like '020C' -> map to '010C' if snapshot exists
+  if (!freezeFrame) return 'NO DATA';
+  if (cmd.length < 4) return 'NO DATA';
+  const pid01 = '01' + cmd.substring(2, 4);
+  const encoded = freezeFrame[pid01];
+  if (!encoded) return 'NO DATA';
+  // encoded is like '41 0C AA BB' -> replace 41 with 42
+  const parts = encoded.trim().split(/\s+/);
+  if (parts.length < 2) return 'NO DATA';
+  parts[0] = '42';
+  return parts.join(' ');
+}
+
+// --- Mode 06: On-board monitoring test results (simplified) ---
+// Represent a few sample tests with 16-bit value/min/max
+const mode06Tests = {
+  // TID 01: Catalyst efficiency Bank 1 Sensor 1 (example)
+  '01': { name: 'Catalyst B1S1', value: 0x0050, min: 0x0010, max: 0x00F0 },
+  // TID 02: O2 Sensor response Bank 1 Sensor 1
+  '02': { name: 'O2 Sensor B1S1', value: 0x0032, min: 0x0014, max: 0x0080 },
+  // TID 03: EVAP system leak test (example)
+  '03': { name: 'EVAP Leak Test', value: 0x000A, min: 0x0000, max: 0x0020 },
+};
+
+function formatMode06Supported() {
+  // Return a simple bitmap for TIDs 01-20 (A = bits 1..8 → 01..08)
+  // Here we set bits for 01..03
+  const A = 0b11100000; // bits 1..3 set starting from MSB? For demo, clients usually don't rely strictly
+  // To avoid confusion, also append explicit list of supported TIDs
+  const supported = Object.keys(mode06Tests).map(k => k.padStart(2, '0')).join(' ');
+  // Minimal: many tools accept a simple header-only plus separate queries; we return both styles for robustness
+  return `46 00 00 00 00 00 ${supported}`.trim();
+}
+
+function formatMode06Tid(tid) {
+  const t = mode06Tests[tid];
+  if (!t) return 'NO DATA';
+  const vA = Math.floor(t.value / 256).toString(16).padStart(2, '0').toUpperCase();
+  const vB = (t.value % 256).toString(16).padStart(2, '0').toUpperCase();
+  const minA = Math.floor(t.min / 256).toString(16).padStart(2, '0').toUpperCase();
+  const minB = (t.min % 256).toString(16).padStart(2, '0').toUpperCase();
+  const maxA = Math.floor(t.max / 256).toString(16).padStart(2, '0').toUpperCase();
+  const maxB = (t.max % 256).toString(16).padStart(2, '0').toUpperCase();
+  // 46 TID value min max (2 bytes each)
+  return `46 ${tid} ${vA} ${vB} ${minA} ${minB} ${maxA} ${maxB}`;
+}
+
 function encodeDtcPair(code) {
   // code like P0301
   const sysChar = code[0].toUpperCase();
@@ -693,8 +760,22 @@ function startTCPServer() {
         dtcState.pending = [];
         dtcState.milOn = false;
         updatePid0101FromDtc();
+    clearFreezeFrame();
         response = '44';
-      } else if (command === 'ATDPN') {
+  } else if (command.startsWith('02')) {
+    // Mode 02 - Freeze Frame snapshot (per-PID request like 020C)
+    response = formatFreezeFrameResponse(command);
+  } else if (command.startsWith('06')) {
+    // Mode 06 - On-board monitoring test results
+    if (command === '0600') {
+      response = formatMode06Supported();
+    } else if (command.length === 4) {
+      const tid = command.substring(2, 4);
+      response = formatMode06Tid(tid);
+    } else {
+      response = 'NO DATA';
+    }
+  } else if (command === 'ATDPN') {
         response = 'A6';
       } else {
         response = '?';
@@ -796,6 +877,69 @@ app.post('/api/dtc/clear', (req, res) => {
     res.json({ success: true, milOn: dtcState.milOn });
   } catch (e) {
     res.status(500).json({ success: false, message: e?.message || 'Unknown error' });
+  }
+});
+
+// MIL API
+app.get('/api/mil', (req, res) => {
+  try {
+    const storedCount = Array.isArray(dtcState.stored) ? dtcState.stored.length : 0;
+    res.json({ milOn: !!dtcState.milOn, storedCount });
+  } catch (e) {
+    res.status(500).json({ message: e?.message || 'Unknown error' });
+  }
+});
+
+app.post('/api/mil/sync', (req, res) => {
+  try {
+    // Ensure MIL reflects current stored DTCs
+    dtcState.milOn = (Array.isArray(dtcState.stored) && dtcState.stored.length > 0);
+    updatePid0101FromDtc();
+    const storedCount = Array.isArray(dtcState.stored) ? dtcState.stored.length : 0;
+    io.emit('mil', { milOn: dtcState.milOn, storedCount });
+    res.json({ success: true, milOn: dtcState.milOn, storedCount });
+  } catch (e) {
+    res.status(500).json({ success: false, message: e?.message || 'Unknown error' });
+  }
+});
+
+// Freeze Frame APIs
+app.get('/api/freeze-frame', (req, res) => {
+  res.json({ snapshot: freezeFrame || null });
+});
+
+app.post('/api/freeze-frame/capture', (req, res) => {
+  try {
+    const snap = captureFreezeFrameFromCurrent();
+    return res.json({ success: true, snapshot: snap });
+  } catch (e) {
+    return res.status(500).json({ success: false, message: e?.message || 'Unknown error' });
+  }
+});
+
+app.post('/api/freeze-frame/clear', (req, res) => {
+  try {
+    clearFreezeFrame();
+    return res.json({ success: true });
+  } catch (e) {
+    return res.status(500).json({ success: false, message: e?.message || 'Unknown error' });
+  }
+});
+
+// Mode 06 REST (for web UI)
+app.get('/api/mode06', (req, res) => {
+  try {
+    const tests = Object.entries(mode06Tests).map(([tid, t]) => ({
+      tid,
+      name: t.name,
+      value: t.value,
+      min: t.min,
+      max: t.max,
+      pass: t.value >= t.min && t.value <= t.max,
+    }));
+    res.json({ tests });
+  } catch (e) {
+    res.status(500).json({ message: e?.message || 'Unknown error' });
   }
 });
 

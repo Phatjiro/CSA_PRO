@@ -117,6 +117,18 @@ const dtcEls = {
   mil: document.getElementById('milStatus'),
 };
 
+const ffEls = {
+  btnCapture: document.getElementById('btnFfCapture'),
+  btnClear: document.getElementById('btnFfClear'),
+  btnRefresh: document.getElementById('btnFfRefresh'),
+  grid: document.getElementById('ffGrid'),
+};
+
+const m6Els = {
+  btnRefresh: document.getElementById('btnM6Refresh'),
+  grid: document.getElementById('m6Grid'),
+};
+
 // Current configuration
 let currentConfig = {};
 
@@ -136,8 +148,18 @@ document.addEventListener('DOMContentLoaded', function() {
     if (dtcEls.btnPermanent) dtcEls.btnPermanent.addEventListener('click', () => loadDtc('permanent'));
     if (dtcEls.btnClear) dtcEls.btnClear.addEventListener('click', () => clearDtc());
 
+    // Freeze Frame buttons
+    if (ffEls.btnCapture) ffEls.btnCapture.addEventListener('click', () => captureFreezeFrame());
+    if (ffEls.btnClear) ffEls.btnClear.addEventListener('click', () => clearFreezeFrame());
+    if (ffEls.btnRefresh) ffEls.btnRefresh.addEventListener('click', () => loadFreezeFrame());
+
+    // Mode 06
+    if (m6Els.btnRefresh) m6Els.btnRefresh.addEventListener('click', () => loadMode06());
+
     // Auto load stored on start
     setTimeout(() => loadDtc('stored'), 300);
+    setTimeout(() => loadFreezeFrame(), 600);
+    setTimeout(() => loadMode06(), 900);
 
     // Socket events
     socket.on('dtcCleared', () => {
@@ -653,4 +675,127 @@ function renderDtc(data) {
   }
   const items = codes.map(c => `<div class="data-card"><div class="data-value" style="font-size:1rem;">${c}</div><div class="data-label">${type}</div></div>`).join('');
   dtcEls.list.innerHTML = items;
+}
+
+function loadFreezeFrame() {
+  fetch('/api/freeze-frame')
+    .then(r => r.json())
+    .then(data => renderFreezeFrame(data?.snapshot || null))
+    .catch(() => renderFreezeFrame(null));
+}
+
+function captureFreezeFrame() {
+  fetch('/api/freeze-frame/capture', { method: 'POST' })
+    .then(r => r.json())
+    .then(() => loadFreezeFrame())
+    .catch(() => {});
+}
+
+function clearFreezeFrame() {
+  fetch('/api/freeze-frame/clear', { method: 'POST' })
+    .then(r => r.json())
+    .then(() => loadFreezeFrame())
+    .catch(() => {});
+}
+
+function renderFreezeFrame(snapshot) {
+  if (!ffEls.grid) return;
+  if (!snapshot) {
+    ffEls.grid.innerHTML = '<div class="data-card">No snapshot</div>';
+    return;
+  }
+  // Display selected PIDs in a compact way
+  const order = ['010C','010D','0105','010F','0110','0111'];
+  const items = order
+    .filter(pid => snapshot[pid])
+    .map(pid => {
+      const enc = (snapshot[pid] || '').toString();
+      const parsed = parseFreezeFrameValue(pid, enc);
+      const label = parsed.label;
+      const display = parsed.value != null ? `${parsed.value}${parsed.unit || ''}` : enc;
+      return `<div class=\"data-card\"><div class=\"data-value\" style=\"font-size:1.1rem;\">${display}</div><div class=\"data-label\">${label}</div></div>`;
+    })
+    .join('');
+  ffEls.grid.innerHTML = items || '<div class="data-card">No snapshot</div>';
+}
+
+// Parse Mode 01-encoded strings like '41 0C AA BB' into numeric values
+function parseFreezeFrameValue(pid, encoded) {
+  const cleaned = (encoded || '').replace(/\s+/g, '').toUpperCase();
+  const key = '41' + pid.substring(2);
+  const labelMap = { '010C':'RPM', '010D':'Speed', '0105':'ECT', '010F':'IAT', '0110':'MAF', '0111':'Throttle' };
+  const result = { label: labelMap[pid] || pid, value: null, unit: '' };
+  const idx = cleaned.indexOf(key);
+  if (idx < 0) return result;
+  try {
+    switch (pid) {
+      case '010C': { // RPM = ((256*A)+B)/4
+        const a = parseInt(cleaned.substring(idx+4, idx+6), 16);
+        const b = parseInt(cleaned.substring(idx+6, idx+8), 16);
+        result.value = Math.round(((256*a)+b)/4);
+        result.unit = ' rpm';
+        break;
+      }
+      case '010D': { // Speed = A
+        const a = parseInt(cleaned.substring(idx+4, idx+6), 16);
+        result.value = a;
+        result.unit = ' km/h';
+        break;
+      }
+      case '0105': { // Coolant = A-40
+        const a = parseInt(cleaned.substring(idx+4, idx+6), 16);
+        result.value = a - 40;
+        result.unit = ' °C';
+        break;
+      }
+      case '010F': { // IAT = A-40
+        const a = parseInt(cleaned.substring(idx+4, idx+6), 16);
+        result.value = a - 40;
+        result.unit = ' °C';
+        break;
+      }
+      case '0110': { // MAF = ((256*A)+B)/100
+        const a = parseInt(cleaned.substring(idx+4, idx+6), 16);
+        const b = parseInt(cleaned.substring(idx+6, idx+8), 16);
+        result.value = Math.round(((256*a)+b)/100);
+        result.unit = ' g/s';
+        break;
+      }
+      case '0111': { // Throttle % = 100*A/255
+        const a = parseInt(cleaned.substring(idx+4, idx+6), 16);
+        result.value = Math.round((a*100)/255);
+        result.unit = ' %';
+        break;
+      }
+    }
+  } catch (e) { /* ignore, fallback to hex */ }
+  return result;
+}
+
+function loadMode06() {
+  fetch('/api/mode06')
+    .then(r => r.json())
+    .then(d => renderMode06(d?.tests || []))
+    .catch(() => renderMode06([]));
+}
+
+function renderMode06(tests) {
+  if (!m6Els.grid) return;
+  if (!tests || tests.length === 0) {
+    m6Els.grid.innerHTML = '<div class="data-card">No tests</div>';
+    return;
+  }
+  const items = tests.map(t => {
+    const pass = !!t.pass;
+    const color = pass ? 'style=\"color:#4CAF50\"' : 'style=\"color:#FF5252\"';
+    const value = Number(t.value);
+    const min = Number(t.min);
+    const max = Number(t.max);
+    return `<div class=\"data-card\">
+      <div class=\"data-value\">${value}</div>
+      <div class=\"data-label\">${t.tid} - ${t.name}</div>
+      <div ${color}>${pass ? 'PASS' : 'FAIL'} (min ${min}, max ${max})</div>
+    </div>`;
+  }).join('');
+  m6Els.grid.innerHTML = items;
 }

@@ -17,6 +17,8 @@ class _EmissionTestsScreenState extends State<EmissionTestsScreen> {
   Timer? _timer;
   Map<String, (bool available, bool completed)> _items = {};
   bool _isLoading = false;
+  bool _milOn = false;
+  int _storedCount = 0;
 
   @override
   void initState() {
@@ -37,10 +39,13 @@ class _EmissionTestsScreenState extends State<EmissionTestsScreen> {
     setState(() => _isLoading = true);
     try {
       final resp = await _client.requestPid('0101'); // Readiness
+      final mil = await _client.readMilAndCount();
       final parsed = _parseReadiness(resp);
       if (mounted) {
         setState(() {
           _items = parsed;
+          _milOn = mil.$1;
+          _storedCount = mil.$2;
           _isLoading = false;
         });
       }
@@ -53,35 +58,66 @@ class _EmissionTestsScreenState extends State<EmissionTestsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Emission tests')),
+      appBar: AppBar(
+        title: const Text('Emission tests'),
+        backgroundColor: const Color(0xFFF39C12),
+        foregroundColor: Colors.white,
+        actions: [
+          IconButton(icon: const Icon(Icons.refresh), onPressed: _isLoading ? null : _poll),
+        ],
+      ),
       body: SafeArea(
         child: _isLoading && _items.isEmpty
             ? const Center(child: CircularProgressIndicator())
             : (_items.isEmpty
                 ? const Center(child: Text('No readiness data'))
-                : ListView.separated(
-                    padding: const EdgeInsets.only(bottom: 12),
-                    itemCount: _items.length,
-                    separatorBuilder: (_, __) => const Divider(height: 1),
-                    itemBuilder: (context, index) {
-                      final key = _items.keys.elementAt(index);
-                      final (available, completed) = _items[key]!;
-                      return ListTile(
-                        title: Text(key),
-                        subtitle: Text(
-                            available ? 'Available' : 'Not available',
-                            style: TextStyle(
-                                color: available
-                                    ? Colors.green
-                                    : Colors.redAccent)),
-                        trailing: Text(
-                            completed ? 'Completed' : 'Not completed',
-                            style: TextStyle(
-                                color: completed
-                                    ? Colors.green
-                                    : Colors.redAccent)),
-                      );
-                    },
+                : Column(
+                    children: [
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                        color: Colors.white.withOpacity(0.04),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Row(children: [
+                              const Text('MIL: ', style: TextStyle(fontWeight: FontWeight.w700)),
+                              Text(
+                                _milOn ? 'ON' : 'OFF',
+                                style: TextStyle(color: _milOn ? Colors.redAccent : Colors.greenAccent, fontWeight: FontWeight.bold),
+                              ),
+                            ]),
+                            Text('Stored: $_storedCount'),
+                          ],
+                        ),
+                      ),
+                      Expanded(
+                        child: ListView.separated(
+                          padding: const EdgeInsets.only(bottom: 12),
+                          itemCount: _items.length,
+                          separatorBuilder: (_, __) => const Divider(height: 1),
+                          itemBuilder: (context, index) {
+                            final key = _items.keys.elementAt(index);
+                            final (available, completed) = _items[key]!;
+                            return ListTile(
+                              leading: Icon(
+                                completed ? Icons.check_circle : Icons.error_outline,
+                                color: completed ? Colors.green : Colors.redAccent,
+                              ),
+                              title: Text(key),
+                              subtitle: Text(
+                                available ? 'Available' : 'Not available',
+                                style: TextStyle(color: available ? Colors.green : Colors.redAccent),
+                              ),
+                              trailing: Text(
+                                completed ? 'Completed' : 'Not completed',
+                                style: TextStyle(color: completed ? Colors.green : Colors.redAccent),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                    ],
                   )),
       ),
     );

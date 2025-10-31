@@ -33,6 +33,45 @@ class ObdClient {
     return _sendAndRead(pid);
   }
 
+  // Mode 06 helpers
+  Future<List<String>> readMode06Supported() async {
+    final r = await _sendAndRead('0600');
+    final cleaned = r.replaceAll(RegExp(r"\s+"), '').toUpperCase();
+    final i = cleaned.indexOf('4600');
+    if (i < 0) return const [];
+    final tail = cleaned.substring(i + 4); // after 4600
+    // interpret as list of 2-hex TIDs if present, else try to split by 2 chars
+    final List<String> tids = [];
+    for (int p = 0; p + 2 <= tail.length; p += 2) {
+      final tid = tail.substring(p, p + 2);
+      if (tid.isEmpty) break;
+      // basic sanity: hex
+      final n = int.tryParse(tid, radix: 16);
+      if (n != null && n > 0) tids.add(tid);
+    }
+    // Deduplicate & filter empties
+    return tids.where((e) => e.trim().isNotEmpty && e != '00').toSet().toList();
+  }
+
+  Future<(int value, int min, int max)> readMode06Tid(String tid) async {
+    final cmd = '06${tid.toUpperCase()}';
+    final r = await _sendAndRead(cmd);
+    final cleaned = r.replaceAll(RegExp(r"\s+"), '').toUpperCase();
+    final key = '46' + tid.toUpperCase();
+    final i = cleaned.indexOf(key);
+    if (i < 0 || cleaned.length < i + 14) return (0, 0, 0);
+    int vA = int.parse(cleaned.substring(i + 4, i + 6), radix: 16);
+    int vB = int.parse(cleaned.substring(i + 6, i + 8), radix: 16);
+    int minA = int.parse(cleaned.substring(i + 8, i + 10), radix: 16);
+    int minB = int.parse(cleaned.substring(i + 10, i + 12), radix: 16);
+    int maxA = int.parse(cleaned.substring(i + 12, i + 14), radix: 16);
+    int maxB = int.parse(cleaned.substring(i + 14, i + 16), radix: 16);
+    final value = 256 * vA + vB;
+    final min = 256 * minA + minB;
+    final max = 256 * maxA + maxB;
+    return (value, min, max);
+  }
+
   // DTC commands
   Future<List<String>> readStoredDtc() async => _parseDtc(await _sendAndRead('03'));
   Future<List<String>> readPendingDtc() async => _parseDtc(await _sendAndRead('07'));

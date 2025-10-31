@@ -6,8 +6,12 @@ import 'dashboard_screen.dart';
 import '../services/connection_manager.dart';
 import 'acceleration_tests_screen.dart';
 import 'emission_tests_screen.dart';
+import 'mode06_screen.dart';
+import 'logbook_screen.dart';
 import 'live_data_select_screen.dart';
 import 'read_codes_screen.dart';
+import 'freeze_frame_screen.dart';
+import 'mil_status_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../utils/prefs_keys.dart';
 
@@ -68,13 +72,13 @@ class _HomeScreenState extends State<HomeScreen> {
                   final groups = <_Group>[
                     _Group('Basic Diagnostics', const Color(0xFF1E88E5), Icons.health_and_safety, [
                       _MenuItem(Icons.bug_report, 'Read & Clear Codes', _Action.openReadCodes),
-                      _MenuItem(Icons.save_alt, 'Freeze Frame', _Action.openPlaceholder),
-                      _MenuItem(Icons.warning_amber, 'MIL Status', _Action.openPlaceholder),
+                      _MenuItem(Icons.save_alt, 'Freeze Frame', _Action.openFreezeFrame),
+                      _MenuItem(Icons.warning_amber, 'MIL Status', _Action.openMilStatus),
                     ]),
                     _Group('Monitoring & Reporting', const Color(0xFF2ECC71), Icons.monitor_heart, [
-                      _MenuItem(Icons.menu_book, 'Logbook', _Action.placeholder),
+                      _MenuItem(Icons.menu_book, 'Logbook', _Action.openLogbook),
                       _MenuItem(Icons.show_chart, 'Live Data', _Action.openLiveData),
-                      _MenuItem(Icons.analytics, 'Mode 6 Scan', _Action.placeholder),
+                      _MenuItem(Icons.analytics, 'Mode 6 Scan', _Action.openMode06),
                     ]),
                     _Group('Maintenance Service', const Color(0xFFF39C12), Icons.build_circle, [
                       _MenuItem(Icons.build, 'Service Tools', _Action.placeholder),
@@ -234,7 +238,7 @@ class _MenuTile extends StatelessWidget {
   }
 }
 
-enum _Action { openDashboard, openLiveData, openAcceleration, openEmission, openReadCodes, openPlaceholder, placeholder }
+enum _Action { openDashboard, openLiveData, openAcceleration, openEmission, openReadCodes, openFreezeFrame, openMilStatus, openMode06, openLogbook, openPlaceholder, placeholder }
 
 class _Section extends StatelessWidget {
   final String title;
@@ -336,6 +340,22 @@ class _Section extends StatelessWidget {
                         }
                         Navigator.of(context).push(MaterialPageRoute(builder: (_) => const EmissionTestsScreen()));
                         break;
+                      case _Action.openMode06:
+                        final client06 = ConnectionManager.instance.client;
+                        if (client06 == null) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Not connected. Please CONNECT first.')),
+                          );
+                          return;
+                        }
+                        Navigator.of(context).push(MaterialPageRoute(builder: (_) => const Mode06Screen()));
+                        break;
+                      case _Action.openLogbook:
+                        Navigator.of(context).push(MaterialPageRoute(builder: (_) => const LogbookScreen()));
+                        break;
+                      case _Action.openLogbook:
+                        Navigator.of(context).push(MaterialPageRoute(builder: (_) => const LogbookScreen()));
+                        break;
                       case _Action.openReadCodes:
                         final clientR = ConnectionManager.instance.client;
                         if (clientR == null) {
@@ -345,6 +365,26 @@ class _Section extends StatelessWidget {
                           return;
                         }
                         Navigator.of(context).push(MaterialPageRoute(builder: (_) => const ReadCodesScreen()));
+                        break;
+                      case _Action.openFreezeFrame:
+                        final clientF = ConnectionManager.instance.client;
+                        if (clientF == null) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Not connected. Please CONNECT first.')),
+                          );
+                          return;
+                        }
+                        Navigator.of(context).push(MaterialPageRoute(builder: (_) => const FreezeFrameScreen()));
+                        break;
+                      case _Action.openMilStatus:
+                        final clientM = ConnectionManager.instance.client;
+                        if (clientM == null) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Not connected. Please CONNECT first.')),
+                          );
+                          return;
+                        }
+                        Navigator.of(context).push(MaterialPageRoute(builder: (_) => const MilStatusScreen()));
                         break;
                       case _Action.openPlaceholder:
                       case _Action.placeholder:
@@ -503,8 +543,27 @@ class _GroupCard extends StatelessWidget {
                               }
                               Navigator.of(context).push(MaterialPageRoute(builder: (_) => const EmissionTestsScreen()));
                               break;
+                            case _Action.openMode06:
+                              final client06 = ConnectionManager.instance.client;
+                              if (client06 == null) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(content: Text('Not connected. Please CONNECT first.')),
+                                );
+                                return;
+                              }
+                              Navigator.of(context).push(MaterialPageRoute(builder: (_) => const Mode06Screen()));
+                              break;
                             case _Action.openReadCodes:
                               Navigator.of(context).push(MaterialPageRoute(builder: (_) => const ReadCodesScreen()));
+                              break;
+                            case _Action.openFreezeFrame:
+                              Navigator.of(context).push(MaterialPageRoute(builder: (_) => const FreezeFrameScreen()));
+                              break;
+                            case _Action.openMilStatus:
+                              Navigator.of(context).push(MaterialPageRoute(builder: (_) => const MilStatusScreen()));
+                              break;
+                            case _Action.openLogbook:
+                              Navigator.of(context).push(MaterialPageRoute(builder: (_) => const LogbookScreen()));
                               break;
                             case _Action.openPlaceholder:
                             case _Action.placeholder:
@@ -743,6 +802,18 @@ void _openGroupChooser(BuildContext context, _Group g) {
                             break;
                           case _Action.openReadCodes:
                             Navigator.of(context).push(MaterialPageRoute(builder: (_) => const ReadCodesScreen()));
+                            break;
+                          case _Action.openFreezeFrame:
+                            Navigator.of(context).push(MaterialPageRoute(builder: (_) => const FreezeFrameScreen()));
+                            break;
+                          case _Action.openMode06:
+                            Navigator.of(context).push(MaterialPageRoute(builder: (_) => const Mode06Screen()));
+                            break;
+                          case _Action.openMilStatus:
+                            Navigator.of(context).push(MaterialPageRoute(builder: (_) => const MilStatusScreen()));
+                            break;
+                          case _Action.openLogbook:
+                            Navigator.of(context).push(MaterialPageRoute(builder: (_) => const LogbookScreen()));
                             break;
                           case _Action.openPlaceholder:
                           case _Action.placeholder:

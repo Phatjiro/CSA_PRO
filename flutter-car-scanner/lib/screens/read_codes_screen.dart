@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_car_scanner/services/obd_client.dart';
 import 'package:flutter_car_scanner/services/connection_manager.dart';
+import 'package:flutter_car_scanner/services/log_service.dart';
 import 'package:flutter_car_scanner/utils/dtc_helper.dart';
 
 class ReadCodesScreen extends StatefulWidget {
@@ -58,6 +59,13 @@ class _ReadCodesScreenState extends State<ReadCodesScreen> with SingleTickerProv
           _loading = false;
         });
       }
+      // Log event
+      await LogService.add({
+        'type': 'read_codes',
+        'mil': _milOn,
+        'storedCount': _stored.length,
+        'dtcs': _stored,
+      });
     } catch (e) {
       if (mounted) {
         setState(() {
@@ -91,6 +99,7 @@ class _ReadCodesScreenState extends State<ReadCodesScreen> with SingleTickerProv
     try {
       await _client!.clearDtc();
       await _refreshAll();
+      await LogService.add({ 'type': 'clear_codes', 'mil': _milOn, 'storedCount': _stored.length });
     } catch (e) {
       if (mounted) {
         setState(() {
