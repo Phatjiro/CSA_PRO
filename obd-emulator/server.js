@@ -13,11 +13,45 @@ app.use(express.json());
 // Serve static files
 app.use(express.static('public'));
 
-// TCP Server for OBD communication
+// --- DTC State & Helpers ---
+const dtcState = {
+  stored: ['P0301', 'P0420'],
+  pending: ['P0171'],
+  permanent: ['P0301'],
+  milOn: true,
+};
+
+function encodeDtcPair(code) {
+  // code like P0301
+  const sysChar = code[0].toUpperCase();
+  const sysBits = { P: 0, C: 1, B: 2, U: 3 }[sysChar] ?? 0;
+  const d1 = parseInt(code[1], 16) || 0;
+  const d2 = parseInt(code[2], 16) || 0;
+  const d3 = parseInt(code[3], 16) || 0;
+  const d4 = parseInt(code[4], 16) || 0;
+  const b1 = ((sysBits & 0x3) << 6) | ((d1 & 0x3) << 4) | (d2 & 0xF);
+  const b2 = ((d3 & 0xF) << 4) | (d4 & 0xF);
+  return [b1, b2]
+    .map(v => v.toString(16).padStart(2, '0').toUpperCase())
+    .join(' ');
+}
+
+function formatDtcResponse(header, list) {
+  if (!list || list.length === 0) return 'NO DATA';
+  const payload = list.map(encodeDtcPair).join(' ');
+  return `${header} ${payload}`;
+}
+
+function updatePid0101FromDtc() {
+  const a = (dtcState.milOn ? 0x80 : 0x00) | Math.min(0x7F, (dtcState.stored?.length || 0));
+  const aHex = a.toString(16).padStart(2, '0').toUpperCase();
+  // Keep B,C,D constant demo values for availability/completion bits
+  obdPids['0101'] = `41 01 ${aHex} 07 25 A0`;
+}
+
+// Emulator configuration & TCP state
 let tcpServer;
 const connectedClients = [];
-
-// Emulator configuration
 const emulatorConfig = {
   elmName: 'ELM327',
   elmVersion: 'v1.2',
@@ -32,9 +66,28 @@ const emulatorConfig = {
     dlc: false,
     lineFeed: false,
     spaces: true,
-    doubleLF: false
+    doubleLF: false,
   },
-  isRunning: false
+  isRunning: false,
+  live: {
+    mode: 'random', // 'random' | 'static'
+    random: {
+      engineRPM: { min: 800, max: 4000 },
+      vehicleSpeed: { min: 0, max: 120 },
+      coolantTemp: { min: 70, max: 100 },
+      intakeTemp: { min: 20, max: 45 },
+      throttlePosition: { min: 0, max: 80 },
+      fuelLevel: { min: 20, max: 100 },
+    },
+    static: {
+      engineRPM: 2000,
+      vehicleSpeed: 60,
+      coolantTemp: 85,
+      intakeTemp: 30,
+      throttlePosition: 25,
+      fuelLevel: 50,
+    },
+  },
 };
 
 // OBD PIDs và responses (theo chuẩn SAE J1979)
@@ -97,6 +150,9 @@ const obdPids = {
   '015F': '41 5F 00 1F 40', // Catalyst Temperature Bank 2 Sensor 1
   '0160': '41 60 00 1F 40', // Catalyst Temperature Bank 2 Sensor 2
 };
+
+// ensure PID 0101 reflects current DTC state
+updatePid0101FromDtc();
 
 // Live data simulation
 let liveData = {
@@ -205,15 +261,18 @@ function updateOBDData(data) {
   const baro = 101;
   obdPids['0133'] = `41 33 ${baro.toString(16).padStart(2, '0').toUpperCase()}`;
 
-  // MAF (PID 0110) g/s -> (256*A + B) / 100
-  const mafGs = Math.max(2, Math.floor(10 + data.throttlePosition * 0.6 + data.engineRPM / 80));
-  const mafRaw = mafGs * 100;
+  // MAF (PID 0110)
+  // Formula: MAF = ((256×A)+B)/100, (A,B) = round(MAF×100)
+  const mafGs = Math.max(0, (typeof data.maf === 'number') ? data.maf : (10 + data.throttlePosition * 0.6 + data.engineRPM / 80));
+  const mafRaw = Math.round(mafGs * 100);
   const mafA = Math.floor(mafRaw / 256).toString(16).padStart(2, '0').toUpperCase();
   const mafB = (mafRaw % 256).toString(16).padStart(2, '0').toUpperCase();
   obdPids['0110'] = `41 10 ${mafA} ${mafB}`;
 
-  // Control Module Voltage (PID 0142) -> (256*A+B)/1000 V
-  const voltageMv = Math.floor(12500 + Math.sin(Date.now() / 3000) * 800 + data.throttlePosition * 5);
+  // Control Module Voltage (PID 0142)
+  // Formula: V = ((256×A)+B)/1000, (A,B) = round(V×1000)
+  const voltageV = (typeof data.voltage === 'number') ? data.voltage : (12.5 + Math.sin(Date.now() / 3000) * 0.8 + data.throttlePosition * 0.005);
+  const voltageMv = Math.round(voltageV * 1000);
   const vA = Math.floor(voltageMv / 256).toString(16).padStart(2, '0').toUpperCase();
   const vB = (voltageMv % 256).toString(16).padStart(2, '0').toUpperCase();
   obdPids['0142'] = `41 42 ${vA} ${vB}`;
@@ -223,9 +282,10 @@ function updateOBDData(data) {
   const ambHex = (ambTemp + 40).toString(16).padStart(2, '0').toUpperCase();
   obdPids['0146'] = `41 46 ${ambHex}`;
 
-  // O2 Sensor 1 Equivalence Ratio (PID 015E) -> ratio=(256*A+B)/32768
-  const lambda = 1.00; // xấp xỉ stoich
-  const lambdaRaw = Math.floor(lambda * 32768);
+  // O2 Sensor 1 Equivalence Ratio (PID 015E)
+  // Formula: λ = ((256×A)+B)/32768, (A,B) = round(λ×32768)
+  const lambda = (typeof data.lambda === 'number') ? data.lambda : 1.00; // xấp xỉ stoich
+  const lambdaRaw = Math.round(lambda * 32768);
   const lamA = Math.floor(lambdaRaw / 256).toString(16).padStart(2, '0').toUpperCase();
   const lamB = (lambdaRaw % 256).toString(16).padStart(2, '0').toUpperCase();
   obdPids['015E'] = `41 5E ${lamA} ${lamB} 00 00`;
@@ -233,24 +293,28 @@ function updateOBDData(data) {
   // Fuel System Status (PID 0103)
   obdPids['0103'] = '41 03 02'; // Open loop due to driving conditions
 
-  // Timing Advance (PID 010E)
-  const timing = Math.floor(10 + Math.sin(Date.now() / 2000) * 5);
-  obdPids['010E'] = `41 0E ${timing.toString(16).padStart(2, '0').toUpperCase()}`;
+  // Timing Advance (PID 010E) per SAE: decoded = A/2 - 64 -> encode A = round((advance+64)*2)
+  const desiredAdvance = (typeof data.timingAdvance === 'number') ? data.timingAdvance : Math.floor(10 + Math.sin(Date.now() / 2000) * 5);
+  const advEnc = Math.max(0, Math.min(255, Math.round((desiredAdvance + 64) * 2)));
+  obdPids['010E'] = `41 0E ${advEnc.toString(16).padStart(2, '0').toUpperCase()}`;
 
   // Runtime since engine start (PID 011F) - seconds
-  const runtime = Math.floor(Date.now() / 1000) % 65536;
+  // Formula: t = 256×A + B, (A,B) = t split
+  const runtime = Math.round((typeof data.runtimeSinceStart === 'number') ? data.runtimeSinceStart : (Date.now() / 1000 % 65536));
   const runtimeA = Math.floor(runtime / 256).toString(16).padStart(2, '0').toUpperCase();
   const runtimeB = (runtime % 256).toString(16).padStart(2, '0').toUpperCase();
   obdPids['011F'] = `41 1F ${runtimeA} ${runtimeB}`;
 
   // Distance with MIL on (PID 0121) - km
-  const milDistance = Math.floor(data.vehicleSpeed * 0.1);
+  // Formula: d = 256×A + B, (A,B) = d split
+  const milDistance = Math.round((typeof data.distanceWithMIL === 'number') ? data.distanceWithMIL : (data.vehicleSpeed * 0.1));
   const milA = Math.floor(milDistance / 256).toString(16).padStart(2, '0').toUpperCase();
   const milB = (milDistance % 256).toString(16).padStart(2, '0').toUpperCase();
   obdPids['0121'] = `41 21 ${milA} ${milB}`;
 
   // Commanded evaporative purge (PID 012E)
-  const purge = Math.floor(20 + data.throttlePosition * 0.3);
+  // Formula: % = A, A = round(%)
+  const purge = Math.min(100, Math.max(0, Math.round((typeof data.commandedPurge === 'number') ? data.commandedPurge : (20 + data.throttlePosition * 0.3))));
   obdPids['012E'] = `41 2E ${purge.toString(16).padStart(2, '0').toUpperCase()}`;
 
   // Warm-ups since codes cleared (PID 0130)
@@ -258,68 +322,84 @@ function updateOBDData(data) {
   obdPids['0130'] = `41 30 ${warmups.toString(16).padStart(2, '0').toUpperCase()}`;
 
   // Distance since codes cleared (PID 0131) - km
-  const clearDistance = Math.floor(data.vehicleSpeed * 0.05);
+  // Formula: d = 256×A + B, (A,B) = d split
+  const clearDistance = Math.round((typeof data.distanceSinceClear === 'number') ? data.distanceSinceClear : (data.vehicleSpeed * 0.05));
   const clearA = Math.floor(clearDistance / 256).toString(16).padStart(2, '0').toUpperCase();
   const clearB = (clearDistance % 256).toString(16).padStart(2, '0').toUpperCase();
   obdPids['0131'] = `41 31 ${clearA} ${clearB}`;
 
-  // Catalyst Temperature (PID 013C)
-  const catTemp = Math.floor(400 + data.engineRPM * 0.1);
-  const catA = Math.floor(catTemp / 256).toString(16).padStart(2, '0').toUpperCase();
-  const catB = (catTemp % 256).toString(16).padStart(2, '0').toUpperCase();
+  // Catalyst Temperature (PID 013C) - encode per SAE: T = ((256×A)+B)/10 - 40 -> A,B = round((T+40)×10)
+  const catTemp = (typeof data.catalystTemp === 'number') ? data.catalystTemp : Math.floor(400 + data.engineRPM * 0.1);
+  const catEnc = Math.round((catTemp + 40) * 10);
+  const catA = Math.floor(catEnc / 256).toString(16).padStart(2, '0').toUpperCase();
+  const catB = (catEnc % 256).toString(16).padStart(2, '0').toUpperCase();
   obdPids['013C'] = `41 3C ${catA} ${catB}`;
 
   // Absolute load value (PID 0143)
-  const absLoad = Math.floor(data.throttlePosition * 0.8);
+  // Formula: % = A, A = round(%)
+  const absLoad = Math.min(100, Math.max(0, Math.round((typeof data.absoluteLoad === 'number') ? data.absoluteLoad : (data.throttlePosition * 0.8))));
   obdPids['0143'] = `41 43 ${absLoad.toString(16).padStart(2, '0').toUpperCase()}`;
 
   // Commanded Equivalence Ratio (PID 0144)
-  const equivRatio = Math.floor(128 + Math.sin(Date.now() / 1000) * 20);
+  // Formula: ER = ((256×A)+B), (A,B) = round(ER)
+  const equivRatio = Math.round((typeof data.commandedEquivRatio === 'number') ? data.commandedEquivRatio : (128 + Math.sin(Date.now() / 1000) * 20));
   const equivA = Math.floor(equivRatio / 256).toString(16).padStart(2, '0').toUpperCase();
   const equivB = (equivRatio % 256).toString(16).padStart(2, '0').toUpperCase();
   obdPids['0144'] = `41 44 ${equivA} ${equivB}`;
 
   // Relative throttle position (PID 0145)
-  const relThrottle = Math.floor(data.throttlePosition * 0.9);
+  // Formula: % = A, A = round(%)
+  const relThrottle = Math.min(100, Math.max(0, Math.round((typeof data.relativeThrottle === 'number') ? data.relativeThrottle : (data.throttlePosition * 0.9))));
   obdPids['0145'] = `41 45 ${relThrottle.toString(16).padStart(2, '0').toUpperCase()}`;
 
   // Absolute throttle position B (PID 0147)
-  const absThrottleB = Math.floor(data.throttlePosition * 0.8);
+  // Formula: % = A, A = round(%)
+  const absThrottleB = Math.min(100, Math.max(0, Math.round((typeof data.absoluteThrottleB === 'number') ? data.absoluteThrottleB : (data.throttlePosition * 0.8))));
   obdPids['0147'] = `41 47 ${absThrottleB.toString(16).padStart(2, '0').toUpperCase()}`;
 
   // Absolute throttle position C (PID 0148)
-  const absThrottleC = Math.floor(data.throttlePosition * 0.7);
+  // Formula: % = A, A = round(%)
+  const absThrottleC = Math.min(100, Math.max(0, Math.round((typeof data.absoluteThrottleC === 'number') ? data.absoluteThrottleC : (data.throttlePosition * 0.7))));
   obdPids['0148'] = `41 48 ${absThrottleC.toString(16).padStart(2, '0').toUpperCase()}`;
 
   // Accelerator pedal positions (PID 0149-014B)
-  const pedalD = Math.floor(data.throttlePosition * 1.2);
-  const pedalE = Math.floor(data.throttlePosition * 0.6);
-  const pedalF = Math.floor(data.throttlePosition * 0.8);
-  obdPids['0149'] = `41 49 ${Math.min(255, pedalD).toString(16).padStart(2, '0').toUpperCase()}`;
-  obdPids['014A'] = `41 4A ${Math.min(255, pedalE).toString(16).padStart(2, '0').toUpperCase()}`;
-  obdPids['014B'] = `41 4B ${Math.min(255, pedalF).toString(16).padStart(2, '0').toUpperCase()}`;
+  // Formula: % = A, A = round(%)
+  const pedalD = Math.min(100, Math.max(0, Math.round((typeof data.pedalPositionD === 'number') ? data.pedalPositionD : (data.throttlePosition * 1.2))));
+  const pedalE = Math.min(100, Math.max(0, Math.round((typeof data.pedalPositionE === 'number') ? data.pedalPositionE : (data.throttlePosition * 0.6))));
+  const pedalF = Math.min(100, Math.max(0, Math.round((typeof data.pedalPositionF === 'number') ? data.pedalPositionF : (data.throttlePosition * 0.8))));
+  obdPids['0149'] = `41 49 ${pedalD.toString(16).padStart(2, '0').toUpperCase()}`;
+  obdPids['014A'] = `41 4A ${pedalE.toString(16).padStart(2, '0').toUpperCase()}`;
+  obdPids['014B'] = `41 4B ${pedalF.toString(16).padStart(2, '0').toUpperCase()}`;
 
   // Commanded throttle actuator (PID 014C)
-  const throttleActuator = Math.floor(data.throttlePosition * 0.9);
+  // Formula: % = A, A = round(%)
+  const throttleActuator = Math.min(100, Math.max(0, Math.round((typeof data.commandedThrottleActuator === 'number') ? data.commandedThrottleActuator : (data.throttlePosition * 0.9))));
   obdPids['014C'] = `41 4C ${throttleActuator.toString(16).padStart(2, '0').toUpperCase()}`;
 
-  // Time run with MIL on (PID 014D)
-  const milTime = Math.floor(Date.now() / 1000) % 65536;
+  // Time run with MIL on (PID 014D) - seconds
+  // Formula: t = 256×A + B, (A,B) = t split
+  const milTime = Math.round((typeof data.timeRunWithMIL === 'number') ? data.timeRunWithMIL : (Date.now() / 1000 % 65536));
   const milTimeA = Math.floor(milTime / 256).toString(16).padStart(2, '0').toUpperCase();
   const milTimeB = (milTime % 256).toString(16).padStart(2, '0').toUpperCase();
   obdPids['014D'] = `41 4D ${milTimeA} ${milTimeB}`;
 
-  // Time since trouble codes cleared (PID 014E)
-  const clearTime = Math.floor(Date.now() / 2000) % 65536;
+  // Time since trouble codes cleared (PID 014E) - seconds
+  // Formula: t = 256×A + B, (A,B) = t split
+  const clearTime = Math.round((typeof data.timeSinceCodesCleared === 'number') ? data.timeSinceCodesCleared : (Date.now() / 2000 % 65536));
   const clearTimeA = Math.floor(clearTime / 256).toString(16).padStart(2, '0').toUpperCase();
   const clearTimeB = (clearTime % 256).toString(16).padStart(2, '0').toUpperCase();
   obdPids['014E'] = `41 4E ${clearTimeA} ${clearTimeB}`;
 
   // Maximum value for equivalence ratio (PID 014F)
-  obdPids['014F'] = '41 4F 80 00';
+  // Formula: ERmax = ((256×A)+B), (A,B) = round(ERmax)
+  const maxEquivRatio = Math.round((typeof data.maxEquivRatio === 'number') ? data.maxEquivRatio : 32768);
+  const maxEquivA = Math.floor(maxEquivRatio / 256).toString(16).padStart(2, '0').toUpperCase();
+  const maxEquivB = (maxEquivRatio % 256).toString(16).padStart(2, '0').toUpperCase();
+  obdPids['014F'] = `41 4F ${maxEquivA} ${maxEquivB}`;
 
   // Maximum value for air flow rate (PID 0150)
-  const maxAirFlow = Math.floor(mafGs * 1.5);
+  // Formula: max = 256×A + B, (A,B) = round(max) - g/s
+  const maxAirFlow = Math.round((typeof data.maxAirFlow === 'number') ? data.maxAirFlow : (mafGs * 1.5));
   const maxAirA = Math.floor(maxAirFlow / 256).toString(16).padStart(2, '0').toUpperCase();
   const maxAirB = (maxAirFlow % 256).toString(16).padStart(2, '0').toUpperCase();
   obdPids['0150'] = `41 50 ${maxAirA} ${maxAirB}`;
@@ -328,18 +408,22 @@ function updateOBDData(data) {
   obdPids['0151'] = '41 51 01'; // Gasoline
 
   // Ethanol fuel % (PID 0152)
-  obdPids['0152'] = '41 52 00'; // 0% ethanol
+  // Formula: % = A, A = round(%)
+  const ethanolFuel = Math.min(100, Math.max(0, Math.round((typeof data.ethanolFuel === 'number') ? data.ethanolFuel : 0)));
+  obdPids['0152'] = `41 52 ${ethanolFuel.toString(16).padStart(2, '0').toUpperCase()}`;
 
   // Absolute evap system vapor pressure (PID 0153)
-  const evapPressure = Math.floor(1000 + Math.sin(Date.now() / 1000) * 200);
-  const evapA = Math.floor(evapPressure / 256).toString(16).padStart(2, '0').toUpperCase();
-  const evapB = (evapPressure % 256).toString(16).padStart(2, '0').toUpperCase();
+  // Formula: p = 256×A + B, (A,B) = round(p) - Pa/kPa
+  const absEvapPressure = Math.round((typeof data.absEvapPressure === 'number') ? data.absEvapPressure : (1000 + Math.sin(Date.now() / 1000) * 200));
+  const evapA = Math.floor(absEvapPressure / 256).toString(16).padStart(2, '0').toUpperCase();
+  const evapB = (absEvapPressure % 256).toString(16).padStart(2, '0').toUpperCase();
   obdPids['0153'] = `41 53 ${evapA} ${evapB}`;
 
   // Evap system vapor pressure (PID 0154)
-  const evapPressure2 = Math.floor(800 + Math.sin(Date.now() / 1500) * 150);
-  const evap2A = Math.floor(evapPressure2 / 256).toString(16).padStart(2, '0').toUpperCase();
-  const evap2B = (evapPressure2 % 256).toString(16).padStart(2, '0').toUpperCase();
+  // Formula: p = 256×A + B, (A,B) = round(p) - Pa/kPa
+  const evapPressure = Math.round((typeof data.evapPressure === 'number') ? data.evapPressure : (800 + Math.sin(Date.now() / 1500) * 150));
+  const evap2A = Math.floor(evapPressure / 256).toString(16).padStart(2, '0').toUpperCase();
+  const evap2B = (evapPressure % 256).toString(16).padStart(2, '0').toUpperCase();
   obdPids['0154'] = `41 54 ${evap2A} ${evap2B}`;
 
   // O2 sensor trims (PID 0155-015C)
@@ -354,33 +438,39 @@ function updateOBDData(data) {
   obdPids['015B'] = `41 5B ${o2TrimHex}`;
   obdPids['015C'] = `41 5C ${o2TrimHex}`;
 
-  // Catalyst temperatures (PID 015D-0160)
-  const catTemp1 = Math.floor(400 + data.engineRPM * 0.1);
-  const catTemp2 = Math.floor(380 + data.engineRPM * 0.08);
-  const catTemp3 = Math.floor(420 + data.engineRPM * 0.12);
-  const catTemp4 = Math.floor(390 + data.engineRPM * 0.09);
+  // Catalyst temperatures (Mode 01: 013C-013F). Prefer provided values if available
+  const catTemp1 = (typeof data.catalystTemp1 === 'number') ? data.catalystTemp1 : Math.floor(400 + data.engineRPM * 0.1);
+  const catTemp2 = (typeof data.catalystTemp2 === 'number') ? data.catalystTemp2 : Math.floor(380 + data.engineRPM * 0.08);
+  const catTemp3 = (typeof data.catalystTemp3 === 'number') ? data.catalystTemp3 : Math.floor(420 + data.engineRPM * 0.12);
+  const catTemp4 = (typeof data.catalystTemp4 === 'number') ? data.catalystTemp4 : Math.floor(390 + data.engineRPM * 0.09);
   
-  const cat1A = Math.floor(catTemp1 / 256).toString(16).padStart(2, '0').toUpperCase();
-  const cat1B = (catTemp1 % 256).toString(16).padStart(2, '0').toUpperCase();
-  obdPids['015D'] = `41 5D ${cat1A} ${cat1B}`;
+  // Encode per SAE: value = (256*A + B)/10 - 40 -> A,B = ((temp+40)*10)
+  const cat1Enc = Math.floor((catTemp1 + 40) * 10);
+  const cat1A = Math.floor(cat1Enc / 256).toString(16).padStart(2, '0').toUpperCase();
+  const cat1B = (cat1Enc % 256).toString(16).padStart(2, '0').toUpperCase();
+  obdPids['013C'] = `41 3C ${cat1A} ${cat1B}`;
   
-  const cat2A = Math.floor(catTemp2 / 256).toString(16).padStart(2, '0').toUpperCase();
-  const cat2B = (catTemp2 % 256).toString(16).padStart(2, '0').toUpperCase();
-  obdPids['015F'] = `41 5F ${cat2A} ${cat2B}`;
+  const cat2Enc = Math.floor((catTemp2 + 40) * 10);
+  const cat2A = Math.floor(cat2Enc / 256).toString(16).padStart(2, '0').toUpperCase();
+  const cat2B = (cat2Enc % 256).toString(16).padStart(2, '0').toUpperCase();
+  obdPids['013D'] = `41 3D ${cat2A} ${cat2B}`;
   
-  const cat3A = Math.floor(catTemp3 / 256).toString(16).padStart(2, '0').toUpperCase();
-  const cat3B = (catTemp3 % 256).toString(16).padStart(2, '0').toUpperCase();
-  obdPids['015F'] = `41 5F ${cat3A} ${cat3B}`;
+  const cat3Enc = Math.floor((catTemp3 + 40) * 10);
+  const cat3A = Math.floor(cat3Enc / 256).toString(16).padStart(2, '0').toUpperCase();
+  const cat3B = (cat3Enc % 256).toString(16).padStart(2, '0').toUpperCase();
+  obdPids['013E'] = `41 3E ${cat3A} ${cat3B}`;
   
-  const cat4A = Math.floor(catTemp4 / 256).toString(16).padStart(2, '0').toUpperCase();
-  const cat4B = (catTemp4 % 256).toString(16).padStart(2, '0').toUpperCase();
-  obdPids['0160'] = `41 60 ${cat4A} ${cat4B}`;
+  const cat4Enc = Math.floor((catTemp4 + 40) * 10);
+  const cat4A = Math.floor(cat4Enc / 256).toString(16).padStart(2, '0').toUpperCase();
+  const cat4B = (cat4Enc % 256).toString(16).padStart(2, '0').toUpperCase();
+  obdPids['013F'] = `41 3F ${cat4A} ${cat4B}`;
 
   // Fuel pressure (PID 010A)
-  const fuelPressure = Math.floor(300 + data.throttlePosition * 2);
-  const fuelPA = Math.floor(fuelPressure / 256).toString(16).padStart(2, '0').toUpperCase();
-  const fuelPB = (fuelPressure % 256).toString(16).padStart(2, '0').toUpperCase();
-  obdPids['010A'] = `41 0A ${fuelPA} ${fuelPB}`;
+  // Formula: P = 3×A (kPa), A = round(P/3) - chỉ biểu diễn bội số 3 kPa
+  const fpValue = (typeof data.fuelPressure === 'number') ? data.fuelPressure : (300 + data.throttlePosition * 2);
+  const fuelAInt = Math.max(0, Math.min(255, Math.round(fpValue / 3))); // lượng tử hóa về bội số 3 kPa
+  const fuelA = fuelAInt.toString(16).padStart(2, '0').toUpperCase();
+  obdPids['010A'] = `41 0A ${fuelA}`;
 
   // Fuel trims (PID 0106-0109)
   const fuelTrim = Math.floor(-25 + Math.sin(Date.now() / 3000) * 15);
@@ -396,71 +486,143 @@ setInterval(() => {
   if (emulatorConfig.isRunning && connectedClients.length > 0) {
     const now = new Date();
     const time = now.getTime();
-    
-    // Tạo dữ liệu giả lập với giá trị thực tế
-    const liveData = {
-      timestamp: now.toLocaleTimeString(),
-      engineRPM: Math.max(0, Math.floor(800 + ((Math.sin(time / 1000) + 1) / 2) * 5000)),
-      vehicleSpeed: Math.floor(60 + Math.sin(time / 2000) * 40),
-      coolantTemp: Math.floor(80 + Math.sin(time / 3000) * 20),
-      intakeTemp: Math.floor(25 + Math.sin(time / 4000) * 15),
-      throttlePosition: Math.floor(10 + Math.sin(time / 1500) * 30),
-      fuelLevel: Math.floor(50 + Math.sin(time / 5000) * 30),
-      engineLoad: Math.floor(10 + Math.sin(time / 1500) * 30),
-      map: Math.floor(30 + Math.sin(time / 1500) * 20),
-      baro: 101,
-      maf: Math.floor(10 + Math.sin(time / 1500) * 15),
-      voltage: Math.floor(12.5 * 1000 + Math.sin(time / 3000) * 800) / 1000,
-      ambient: 27,
-      lambda: 1.00,
-      fuelSystemStatus: 2,
-      timingAdvance: Math.floor(10 + Math.sin(time / 2000) * 5),
-      runtimeSinceStart: Math.floor(time / 1000) % 65536,
-      distanceWithMIL: Math.floor((60 + Math.sin(time / 2000) * 40) * 0.1),
-      commandedPurge: Math.floor(20 + Math.sin(time / 1500) * 10),
-      warmupsSinceClear: Math.floor(time / 300000) % 256,
-      distanceSinceClear: Math.floor((60 + Math.sin(time / 2000) * 40) * 0.05),
-      catalystTemp: Math.floor(400 + (800 + Math.sin(time / 1000) * 2000) * 0.1),
-      absoluteLoad: Math.floor((10 + Math.sin(time / 1500) * 30) * 0.8),
-      commandedEquivRatio: Math.floor(128 + Math.sin(time / 1000) * 20),
-      relativeThrottle: Math.floor((10 + Math.sin(time / 1500) * 30) * 0.9),
-      absoluteThrottleB: Math.floor((10 + Math.sin(time / 1500) * 30) * 0.8),
-      absoluteThrottleC: Math.floor((10 + Math.sin(time / 1500) * 30) * 0.7),
-      pedalPositionD: Math.floor((10 + Math.sin(time / 1500) * 30) * 1.2),
-      pedalPositionE: Math.floor((10 + Math.sin(time / 1500) * 30) * 0.6),
-      pedalPositionF: Math.floor((10 + Math.sin(time / 1500) * 30) * 0.8),
-      commandedThrottleActuator: Math.floor((10 + Math.sin(time / 1500) * 30) * 0.9),
-      timeRunWithMIL: Math.floor(time / 1000) % 65536,
-      timeSinceCodesCleared: Math.floor(time / 2000) % 65536,
-      maxEquivRatio: 128,
-      maxAirFlow: Math.floor((10 + Math.sin(time / 1500) * 15) * 1.5),
-      fuelType: 1,
-      ethanolFuel: 0,
-      absEvapPressure: Math.floor(1000 + Math.sin(time / 1000) * 200),
-      evapPressure: Math.floor(800 + Math.sin(time / 1500) * 150),
-      shortTermO2Trim1: Math.floor(-50 + Math.sin(time / 2000) * 30),
-      longTermO2Trim1: Math.floor(-50 + Math.sin(time / 2000) * 30),
-      shortTermO2Trim2: Math.floor(-50 + Math.sin(time / 2000) * 30),
-      longTermO2Trim2: Math.floor(-50 + Math.sin(time / 2000) * 30),
-      shortTermO2Trim3: Math.floor(-50 + Math.sin(time / 2000) * 30),
-      longTermO2Trim3: Math.floor(-50 + Math.sin(time / 2000) * 30),
-      shortTermO2Trim4: Math.floor(-50 + Math.sin(time / 2000) * 30),
-      longTermO2Trim4: Math.floor(-50 + Math.sin(time / 2000) * 30),
-      catalystTemp1: Math.floor(400 + (800 + Math.sin(time / 1000) * 2000) * 0.1),
-      catalystTemp2: Math.floor(380 + (800 + Math.sin(time / 1000) * 2000) * 0.08),
-      catalystTemp3: Math.floor(420 + (800 + Math.sin(time / 1000) * 2000) * 0.12),
-      catalystTemp4: Math.floor(390 + (800 + Math.sin(time / 1000) * 2000) * 0.09),
-      fuelPressure: Math.floor(300 + (10 + Math.sin(time / 1500) * 30) * 2),
-      shortTermFuelTrim1: Math.floor(-25 + Math.sin(time / 3000) * 15),
-      longTermFuelTrim1: Math.floor(-25 + Math.sin(time / 3000) * 15),
-      shortTermFuelTrim2: Math.floor(-25 + Math.sin(time / 3000) * 15),
-      longTermFuelTrim2: Math.floor(-25 + Math.sin(time / 3000) * 15),
-    };
 
-    // Cập nhật OBD PIDs với dữ liệu thực tế
-    updateOBDData(liveData);
-    
-    io.emit('liveData', liveData);
+    const clamp = (v, min = 0, max = Number.MAX_SAFE_INTEGER) => Math.max(min, Math.min(max, v));
+    const rnd = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
+
+    let sample;
+    if (emulatorConfig.live && emulatorConfig.live.mode === 'static') {
+      const s = emulatorConfig.live.static || {};
+      sample = {
+        timestamp: now.toLocaleTimeString(),
+        engineRPM: clamp(s.engineRPM ?? 2000, 0, 8000),
+        vehicleSpeed: clamp(s.vehicleSpeed ?? 60, 0, 255),
+        coolantTemp: clamp(s.coolantTemp ?? 85, -40, 215),
+        intakeTemp: clamp(s.intakeTemp ?? 30, -40, 215),
+        throttlePosition: clamp(s.throttlePosition ?? 25, 0, 100),
+        fuelLevel: clamp(s.fuelLevel ?? 50, 0, 100),
+        // phần còn lại giữ ổn định/giá trị hợp lý
+        engineLoad: clamp((s.throttlePosition ?? 25), 0, 100),
+        map: clamp(40, 10, 255),
+        baro: 101,
+        maf: clamp(15, 0, 255),
+        voltage: 12.5,
+        ambient: 27,
+        lambda: 1.0,
+        fuelSystemStatus: 2,
+        timingAdvance: 12,
+        runtimeSinceStart: clamp(Math.floor(time / 1000) % 65536, 0, 65535),
+        distanceWithMIL: 0,
+        commandedPurge: 20,
+        warmupsSinceClear: clamp(Math.floor(time / 300000) % 256, 0, 255),
+        distanceSinceClear: 0,
+        catalystTemp: 450,
+        absoluteLoad: clamp(Math.floor((s.throttlePosition ?? 25) * 0.8), 0, 255),
+        commandedEquivRatio: 128,
+        relativeThrottle: clamp(Math.floor((s.throttlePosition ?? 25) * 0.9), 0, 255),
+        absoluteThrottleB: clamp(Math.floor((s.throttlePosition ?? 25) * 0.8), 0, 255),
+        absoluteThrottleC: clamp(Math.floor((s.throttlePosition ?? 25) * 0.7), 0, 255),
+        pedalPositionD: clamp(Math.floor((s.throttlePosition ?? 25) * 1.2), 0, 255),
+        pedalPositionE: clamp(Math.floor((s.throttlePosition ?? 25) * 0.6), 0, 255),
+        pedalPositionF: clamp(Math.floor((s.throttlePosition ?? 25) * 0.8), 0, 255),
+        commandedThrottleActuator: clamp(Math.floor((s.throttlePosition ?? 25) * 0.9), 0, 255),
+        timeRunWithMIL: clamp(Math.floor(time / 1000) % 65536, 0, 65535),
+        timeSinceCodesCleared: clamp(Math.floor(time / 2000) % 65536, 0, 65535),
+        maxEquivRatio: 128,
+        maxAirFlow: 30,
+        fuelType: 1,
+        ethanolFuel: 0,
+        absEvapPressure: 1100,
+        evapPressure: 900,
+        shortTermO2Trim1: 0,
+        longTermO2Trim1: 0,
+        shortTermO2Trim2: 0,
+        longTermO2Trim2: 0,
+        shortTermO2Trim3: 0,
+        longTermO2Trim3: 0,
+        shortTermO2Trim4: 0,
+        longTermO2Trim4: 0,
+        catalystTemp1: 450,
+        catalystTemp2: 430,
+        catalystTemp3: 470,
+        catalystTemp4: 440,
+        fuelPressure: 320,
+        shortTermFuelTrim1: 0,
+        longTermFuelTrim1: 0,
+        shortTermFuelTrim2: 0,
+        longTermFuelTrim2: 0,
+      };
+    } else {
+      const rr = (emulatorConfig.live && emulatorConfig.live.random) || {};
+      const r = (k, dmin, dmax) => {
+        const cfg = rr[k] || { min: dmin, max: dmax };
+        const min = Math.min(cfg.min ?? dmin, cfg.max ?? dmax);
+        const max = Math.max(cfg.min ?? dmin, cfg.max ?? dmax);
+        return rnd(min, max);
+      };
+      sample = {
+        timestamp: now.toLocaleTimeString(),
+        engineRPM: clamp(r('engineRPM', 800, 5000), 0, 8000),
+        vehicleSpeed: clamp(r('vehicleSpeed', 0, 120), 0, 255),
+        coolantTemp: clamp(r('coolantTemp', 70, 100), -40, 215),
+        intakeTemp: clamp(r('intakeTemp', 20, 45), -40, 215),
+        throttlePosition: clamp(r('throttlePosition', 0, 80), 0, 100),
+        fuelLevel: clamp(r('fuelLevel', 20, 100), 0, 100),
+        engineLoad: clamp(r('throttlePosition', 0, 80), 0, 100),
+        map: clamp(Math.floor(30 + Math.sin(time / 1500) * 20), 10, 255),
+        baro: 101,
+        maf: clamp(Math.floor(10 + Math.sin(time / 1500) * 15), 0, 255),
+        voltage: clamp(Math.floor(12.5 * 1000 + Math.sin(time / 3000) * 800) / 1000, 10, 16),
+        ambient: 27,
+        lambda: 1.0,
+        fuelSystemStatus: 2,
+        timingAdvance: Math.floor(10 + Math.sin(time / 2000) * 5),
+        runtimeSinceStart: clamp(Math.floor(time / 1000) % 65536, 0, 65535),
+        distanceWithMIL: clamp(Math.floor(sample?.vehicleSpeed ? sample.vehicleSpeed * 0.1 : 5), 0, 65535),
+        commandedPurge: clamp(Math.floor(20 + Math.sin(time / 1500) * 10), 0, 100),
+        warmupsSinceClear: clamp(Math.floor(time / 300000) % 256, 0, 255),
+        distanceSinceClear: clamp(Math.floor((sample?.vehicleSpeed ?? 60) * 0.05), 0, 65535),
+        catalystTemp: clamp(Math.floor(400 + (800 + Math.sin(time / 1000) * 2000) * 0.1), 0, 65535),
+        absoluteLoad: clamp(Math.floor((r('throttlePosition', 0, 80)) * 0.8), 0, 255),
+        commandedEquivRatio: clamp(Math.floor(128 + Math.sin(time / 1000) * 20), 0, 255),
+        relativeThrottle: clamp(Math.floor((r('throttlePosition', 0, 80)) * 0.9), 0, 255),
+        absoluteThrottleB: clamp(Math.floor((r('throttlePosition', 0, 80)) * 0.8), 0, 255),
+        absoluteThrottleC: clamp(Math.floor((r('throttlePosition', 0, 80)) * 0.7), 0, 255),
+        pedalPositionD: clamp(Math.floor((r('throttlePosition', 0, 80)) * 1.2), 0, 255),
+        pedalPositionE: clamp(Math.floor((r('throttlePosition', 0, 80)) * 0.6), 0, 255),
+        pedalPositionF: clamp(Math.floor((r('throttlePosition', 0, 80)) * 0.8), 0, 255),
+        commandedThrottleActuator: clamp(Math.floor((r('throttlePosition', 0, 80)) * 0.9), 0, 255),
+        timeRunWithMIL: clamp(Math.floor(time / 1000) % 65536, 0, 65535),
+        timeSinceCodesCleared: clamp(Math.floor(time / 2000) % 65536, 0, 65535),
+        maxEquivRatio: 128,
+        maxAirFlow: clamp(Math.floor((10 + Math.sin(time / 1500) * 15) * 1.5), 0, 65535),
+        fuelType: 1,
+        ethanolFuel: 0,
+        absEvapPressure: clamp(Math.floor(1000 + Math.sin(time / 1000) * 200), 0, 65535),
+        evapPressure: clamp(Math.floor(800 + Math.sin(time / 1500) * 150), 0, 65535),
+        shortTermO2Trim1: Math.floor(-50 + Math.sin(time / 2000) * 30),
+        longTermO2Trim1: Math.floor(-50 + Math.sin(time / 2000) * 30),
+        shortTermO2Trim2: Math.floor(-50 + Math.sin(time / 2000) * 30),
+        longTermO2Trim2: Math.floor(-50 + Math.sin(time / 2000) * 30),
+        shortTermO2Trim3: Math.floor(-50 + Math.sin(time / 2000) * 30),
+        longTermO2Trim3: Math.floor(-50 + Math.sin(time / 2000) * 30),
+        shortTermO2Trim4: Math.floor(-50 + Math.sin(time / 2000) * 30),
+        longTermO2Trim4: Math.floor(-50 + Math.sin(time / 2000) * 30),
+        catalystTemp1: clamp(Math.floor(400 + (800 + Math.sin(time / 1000) * 2000) * 0.1), 0, 65535),
+        catalystTemp2: clamp(Math.floor(380 + (800 + Math.sin(time / 1000) * 2000) * 0.08), 0, 65535),
+        catalystTemp3: clamp(Math.floor(420 + (800 + Math.sin(time / 1000) * 2000) * 0.12), 0, 65535),
+        catalystTemp4: clamp(Math.floor(390 + (800 + Math.sin(time / 1000) * 2000) * 0.09), 0, 65535),
+        fuelPressure: clamp(Math.floor(300 + (r('throttlePosition', 0, 80)) * 2), 0, 65535),
+        shortTermFuelTrim1: Math.floor(-25 + Math.sin(time / 3000) * 15),
+        longTermFuelTrim1: Math.floor(-25 + Math.sin(time / 3000) * 15),
+        shortTermFuelTrim2: Math.floor(-25 + Math.sin(time / 3000) * 15),
+        longTermFuelTrim2: Math.floor(-25 + Math.sin(time / 3000) * 15),
+      };
+    }
+
+    updateOBDData(sample);
+    io.emit('liveData', sample);
+    try { app.set('lastLiveSample', sample); } catch (e) {}
   }
 }, 1000);
 
@@ -516,6 +678,22 @@ function startTCPServer() {
         } else {
           response = 'NO DATA';
         }
+      } else if (command === '03') {
+        // Mode 03 - Stored/Confirmed DTCs
+        response = formatDtcResponse('43', dtcState.stored);
+      } else if (command === '07') {
+        // Mode 07 - Pending DTCs
+        response = formatDtcResponse('47', dtcState.pending);
+      } else if (command === '0A') {
+        // Mode 0A - Permanent DTCs
+        response = formatDtcResponse('4A', dtcState.permanent);
+      } else if (command === '04') {
+        // Mode 04 - Clear DTCs
+        dtcState.stored = [];
+        dtcState.pending = [];
+        dtcState.milOn = false;
+        updatePid0101FromDtc();
+        response = '44';
       } else if (command === 'ATDPN') {
         response = 'A6';
       } else {
@@ -596,6 +774,92 @@ io.on('connection', (socket) => {
 // REST APIs for web UI
 app.get('/api/config', (req, res) => {
   res.json(emulatorConfig);
+});
+
+// DTC APIs
+app.get('/api/dtc/stored', (req, res) => {
+  res.json({ codes: dtcState.stored || [], milOn: dtcState.milOn, type: 'stored' });
+});
+app.get('/api/dtc/pending', (req, res) => {
+  res.json({ codes: dtcState.pending || [], milOn: dtcState.milOn, type: 'pending' });
+});
+app.get('/api/dtc/permanent', (req, res) => {
+  res.json({ codes: dtcState.permanent || [], milOn: dtcState.milOn, type: 'permanent' });
+});
+app.post('/api/dtc/clear', (req, res) => {
+  try {
+    dtcState.stored = [];
+    dtcState.pending = [];
+    dtcState.milOn = false;
+    updatePid0101FromDtc();
+    io.emit('dtcCleared', { ok: true, milOn: dtcState.milOn });
+    res.json({ success: true, milOn: dtcState.milOn });
+  } catch (e) {
+    res.status(500).json({ success: false, message: e?.message || 'Unknown error' });
+  }
+});
+
+// Live data APIs
+app.get('/api/live', (req, res) => {
+  res.json({
+    mode: emulatorConfig.live?.mode || 'random',
+    random: emulatorConfig.live?.random || {},
+    static: emulatorConfig.live?.static || {},
+    last: app.get('lastLiveSample') || null
+  });
+});
+
+app.post('/api/live/mode', (req, res) => {
+  try {
+    const mode = (req.body?.mode || '').toString();
+    if (mode !== 'random' && mode !== 'static') {
+      return res.status(400).json({ success: false, message: 'mode must be "random" or "static"' });
+    }
+    emulatorConfig.live = emulatorConfig.live || {};
+    emulatorConfig.live.mode = mode;
+    io.emit('liveMode', { mode });
+    return res.json({ success: true, mode });
+  } catch (e) {
+    return res.status(500).json({ success: false, message: e.message || 'Unknown error' });
+  }
+});
+
+app.post('/api/live/static', (req, res) => {
+  try {
+    const allowed = ['engineRPM','vehicleSpeed','coolantTemp','intakeTemp','throttlePosition','fuelLevel'];
+    const body = req.body || {};
+    emulatorConfig.live = emulatorConfig.live || {};
+    emulatorConfig.live.static = emulatorConfig.live.static || {};
+    for (const k of allowed) {
+      if (body[k] !== undefined) {
+        emulatorConfig.live.static[k] = Number(body[k]);
+      }
+    }
+    return res.json({ success: true, static: emulatorConfig.live.static });
+  } catch (e) {
+    return res.status(500).json({ success: false, message: e.message || 'Unknown error' });
+  }
+});
+
+app.post('/api/live/random', (req, res) => {
+  try {
+    const ranges = req.body?.ranges || req.body || {};
+    const allowed = ['engineRPM','vehicleSpeed','coolantTemp','intakeTemp','throttlePosition','fuelLevel'];
+    emulatorConfig.live = emulatorConfig.live || {};
+    emulatorConfig.live.random = emulatorConfig.live.random || {};
+    for (const k of allowed) {
+      if (ranges[k]) {
+        const min = Number(ranges[k].min);
+        const max = Number(ranges[k].max);
+        if (Number.isFinite(min) && Number.isFinite(max)) {
+          emulatorConfig.live.random[k] = { min, max };
+        }
+      }
+    }
+    return res.json({ success: true, random: emulatorConfig.live.random });
+  } catch (e) {
+    return res.status(500).json({ success: false, message: e.message || 'Unknown error' });
+  }
 });
 
 app.post('/api/start', (req, res) => {

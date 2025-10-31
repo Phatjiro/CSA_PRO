@@ -79,7 +79,7 @@
                     <h3>Settings</h3>
                     <div class="toggle-grid">
                         <div class="toggle-item">
-                            <label class="toggle-label">
+                            <label class="toggle-label" title="Bật/tắt phản hồi lại ký tự bạn gõ (AT E0/E1)">
                                 <input type="checkbox" id="echo" class="toggle-input">
                                 <span class="toggle-slider"></span>
                                 <span class="toggle-text">Echo</span>
@@ -87,7 +87,7 @@
                         </div>
                         
                         <div class="toggle-item">
-                            <label class="toggle-label">
+                            <label class="toggle-label" title="Hiển thị/ẩn header CAN trong phản hồi (AT H0/H1)">
                                 <input type="checkbox" id="headers" class="toggle-input" checked>
                                 <span class="toggle-slider"></span>
                                 <span class="toggle-text">Headers</span>
@@ -95,7 +95,7 @@
                         </div>
                         
                         <div class="toggle-item">
-                            <label class="toggle-label">
+                            <label class="toggle-label" title="Hiển thị/ẩn DLC (Data Length Code) (AT D0/D1)">
                                 <input type="checkbox" id="dlc" class="toggle-input">
                                 <span class="toggle-slider"></span>
                                 <span class="toggle-text">DLC</span>
@@ -103,7 +103,7 @@
                         </div>
                         
                         <div class="toggle-item">
-                            <label class="toggle-label">
+                            <label class="toggle-label" title="Thêm ký tự xuống dòng trong phản hồi (AT L0/L1)">
                                 <input type="checkbox" id="lineFeed" class="toggle-input">
                                 <span class="toggle-slider"></span>
                                 <span class="toggle-text">Line feed</span>
@@ -111,7 +111,7 @@
                         </div>
                         
                         <div class="toggle-item">
-                            <label class="toggle-label">
+                            <label class="toggle-label" title="Thêm khoảng trắng giữa các byte dữ liệu trong phản hồi (AT S0/S1)">
                                 <input type="checkbox" id="spaces" class="toggle-input" checked>
                                 <span class="toggle-slider"></span>
                                 <span class="toggle-text">Spaces</span>
@@ -119,10 +119,18 @@
                         </div>
                         
                         <div class="toggle-item">
-                            <label class="toggle-label">
+                            <label class="toggle-label" title="Thêm 2 lần xuống dòng trong phản hồi">
                                 <input type="checkbox" id="doubleLF" class="toggle-input">
                                 <span class="toggle-slider"></span>
                                 <span class="toggle-text">Double LF</span>
+                            </label>
+                        </div>
+
+                        <div class="toggle-item">
+                            <label class="toggle-label" title="Chế độ tạo dữ liệu: Bật = Random, Tắt = Static">
+                                <input type="checkbox" id="liveModeToggle" class="toggle-input">
+                                <span class="toggle-slider"></span>
+                                <span class="toggle-text">Live Mode: Random</span>
                             </label>
                         </div>
                     </div>
@@ -384,6 +392,23 @@
                             <div class="data-value" id="longTermFuelTrim2">0</div>
                             <div class="data-label">LT Fuel Trim 2 (%)</div>
                         </div>
+                    </div>
+                </div>
+
+                <!-- DTC Section -->
+                <div class="live-data-section">
+                    <div class="section-header">
+                        <h2>DTC</h2>
+                        <div class="connection-info" id="milStatus">MIL: unknown</div>
+                        <div>
+                            <button id="btnDtcStored" class="btn btn-small">Stored</button>
+                            <button id="btnDtcPending" class="btn btn-small">Pending</button>
+                            <button id="btnDtcPermanent" class="btn btn-small">Permanent</button>
+                            <button id="btnDtcClear" class="btn btn-small btn-danger">Clear</button>
+                        </div>
+                    </div>
+                    <div id="dtcList" class="live-data-grid" style="max-height:160px; overflow:auto; padding:8px 4px;">
+                        <div class="data-card">Chưa tải dữ liệu DTC.</div>
                     </div>
                 </div>
 

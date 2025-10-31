@@ -82,6 +82,7 @@ class _LiveDataChartScreenState extends State<LiveDataChartScreen> {
   void initState() {
     super.initState();
     widget.client.dataStream.listen(_onData);
+    _applyEnabledPidsForChart();
   }
 
   void _onData(ObdLiveData data) {
@@ -298,12 +299,167 @@ class _LiveDataChartScreenState extends State<LiveDataChartScreen> {
     return bars;
   }
 
+  void _applyEnabledPidsForChart() {
+    final required = <String>{'010C', '010D', '0105'}; // always include RPM/Speed/Coolant
+    for (final m in widget.selectedMetrics) {
+      required.addAll(_pidsForMetric(m));
+    }
+    widget.client.setEnabledPids(required);
+  }
+
+  Set<String> _pidsForMetric(LiveMetric m) {
+    switch (m) {
+      case LiveMetric.rpm: return {'010C'};
+      case LiveMetric.speed: return {'010D'};
+      case LiveMetric.coolant: return {'0105'};
+      case LiveMetric.intake: return {'010F'};
+      case LiveMetric.throttle: return {'0111'};
+      case LiveMetric.fuel: return {'012F'};
+      case LiveMetric.load: return {'0104'};
+      case LiveMetric.map: return {'010B'};
+      case LiveMetric.baro: return {'0133'};
+      case LiveMetric.maf: return {'0110'};
+      case LiveMetric.voltage: return {'0142'};
+      case LiveMetric.ambient: return {'0146'};
+      case LiveMetric.lambda: return {'015E'};
+      case LiveMetric.fuelSystemStatus: return {'0103'};
+      case LiveMetric.timingAdvance: return {'010E'};
+      case LiveMetric.runtimeSinceStart: return {'011F'};
+      case LiveMetric.distanceWithMIL: return {'0121'};
+      case LiveMetric.commandedPurge: return {'012E'};
+      case LiveMetric.warmupsSinceClear: return {'0130'};
+      case LiveMetric.distanceSinceClear: return {'0131'};
+      case LiveMetric.catalystTemp: return {'013C'};
+      case LiveMetric.absoluteLoad: return {'0143'};
+      case LiveMetric.commandedEquivRatio: return {'0144'};
+      case LiveMetric.relativeThrottle: return {'0145'};
+      case LiveMetric.absoluteThrottleB: return {'0147'};
+      case LiveMetric.absoluteThrottleC: return {'0148'};
+      case LiveMetric.pedalPositionD: return {'0149'};
+      case LiveMetric.pedalPositionE: return {'014A'};
+      case LiveMetric.pedalPositionF: return {'014B'};
+      case LiveMetric.commandedThrottleActuator: return {'014C'};
+      case LiveMetric.timeRunWithMIL: return {'014D'};
+      case LiveMetric.timeSinceCodesCleared: return {'014E'};
+      case LiveMetric.maxEquivRatio: return {'014F'};
+      case LiveMetric.maxAirFlow: return {'0150'};
+      case LiveMetric.fuelType: return {'0151'};
+      case LiveMetric.ethanolFuel: return {'0152'};
+      case LiveMetric.absEvapPressure: return {'0153'};
+      case LiveMetric.evapPressure: return {'0154'};
+      case LiveMetric.shortTermO2Trim1: return {'0155'};
+      case LiveMetric.longTermO2Trim1: return {'0156'};
+      case LiveMetric.shortTermO2Trim2: return {'0157'};
+      case LiveMetric.longTermO2Trim2: return {'0158'};
+      case LiveMetric.shortTermO2Trim3: return {'0159'};
+      case LiveMetric.longTermO2Trim3: return {'015A'};
+      case LiveMetric.shortTermO2Trim4: return {'015B'};
+      case LiveMetric.longTermO2Trim4: return {'015C'};
+      case LiveMetric.catalystTemp1: return {'013C'};
+      case LiveMetric.catalystTemp2: return {'013D'};
+      case LiveMetric.catalystTemp3: return {'013E'};
+      case LiveMetric.catalystTemp4: return {'013F'};
+      case LiveMetric.fuelPressure: return {'010A'};
+      case LiveMetric.shortTermFuelTrim1: return {'0106'};
+      case LiveMetric.longTermFuelTrim1: return {'0107'};
+      case LiveMetric.shortTermFuelTrim2: return {'0108'};
+      case LiveMetric.longTermFuelTrim2: return {'0109'};
+    }
+  }
+
+  // Compute dynamic Y range across selected series for better visibility
+  (double, double) _computeYRange() {
+    double? minV;
+    double? maxV;
+    for (final m in widget.selectedMetrics) {
+      final series = _seriesForMetric(m);
+      for (final p in series) {
+        minV = minV == null ? p.y : (p.y < minV! ? p.y : minV);
+        maxV = maxV == null ? p.y : (p.y > maxV! ? p.y : maxV);
+      }
+    }
+    if (minV == null || maxV == null) {
+      return (0, 100);
+    }
+    if (minV == maxV) {
+      // expand a bit when flat line
+      return (minV! - 1, maxV! + 1);
+    }
+    final padding = (maxV! - minV!) * 0.1; // 10% headroom
+    return (minV! - padding, maxV! + padding);
+  }
+
+  List<FlSpot> _seriesForMetric(LiveMetric m) {
+    switch (m) {
+      case LiveMetric.rpm: return _rpm;
+      case LiveMetric.speed: return _speed;
+      case LiveMetric.coolant: return _coolant;
+      case LiveMetric.intake: return _intake;
+      case LiveMetric.throttle: return _throttle;
+      case LiveMetric.fuel: return _fuel;
+      case LiveMetric.load: return _load;
+      case LiveMetric.map: return _map;
+      case LiveMetric.baro: return _baro;
+      case LiveMetric.maf: return _maf;
+      case LiveMetric.voltage: return _voltage;
+      case LiveMetric.ambient: return _ambient;
+      case LiveMetric.lambda: return _lambda;
+      case LiveMetric.fuelSystemStatus: return _fuelSystemStatus;
+      case LiveMetric.timingAdvance: return _timingAdvance;
+      case LiveMetric.runtimeSinceStart: return _runtimeSinceStart;
+      case LiveMetric.distanceWithMIL: return _distanceWithMIL;
+      case LiveMetric.commandedPurge: return _commandedPurge;
+      case LiveMetric.warmupsSinceClear: return _warmupsSinceClear;
+      case LiveMetric.distanceSinceClear: return _distanceSinceClear;
+      case LiveMetric.catalystTemp: return _catalystTemp;
+      case LiveMetric.absoluteLoad: return _absoluteLoad;
+      case LiveMetric.commandedEquivRatio: return _commandedEquivRatio;
+      case LiveMetric.relativeThrottle: return _relativeThrottle;
+      case LiveMetric.absoluteThrottleB: return _absoluteThrottleB;
+      case LiveMetric.absoluteThrottleC: return _absoluteThrottleC;
+      case LiveMetric.pedalPositionD: return _pedalPositionD;
+      case LiveMetric.pedalPositionE: return _pedalPositionE;
+      case LiveMetric.pedalPositionF: return _pedalPositionF;
+      case LiveMetric.commandedThrottleActuator: return _commandedThrottleActuator;
+      case LiveMetric.timeRunWithMIL: return _timeRunWithMIL;
+      case LiveMetric.timeSinceCodesCleared: return _timeSinceCodesCleared;
+      case LiveMetric.maxEquivRatio: return _maxEquivRatio;
+      case LiveMetric.maxAirFlow: return _maxAirFlow;
+      case LiveMetric.fuelType: return _fuelType;
+      case LiveMetric.ethanolFuel: return _ethanolFuel;
+      case LiveMetric.absEvapPressure: return _absEvapPressure;
+      case LiveMetric.evapPressure: return _evapPressure;
+      case LiveMetric.shortTermO2Trim1: return _shortTermO2Trim1;
+      case LiveMetric.longTermO2Trim1: return _longTermO2Trim1;
+      case LiveMetric.shortTermO2Trim2: return _shortTermO2Trim2;
+      case LiveMetric.longTermO2Trim2: return _longTermO2Trim2;
+      case LiveMetric.shortTermO2Trim3: return _shortTermO2Trim3;
+      case LiveMetric.longTermO2Trim3: return _longTermO2Trim3;
+      case LiveMetric.shortTermO2Trim4: return _shortTermO2Trim4;
+      case LiveMetric.longTermO2Trim4: return _longTermO2Trim4;
+      case LiveMetric.catalystTemp1: return _catalystTemp1;
+      case LiveMetric.catalystTemp2: return _catalystTemp2;
+      case LiveMetric.catalystTemp3: return _catalystTemp3;
+      case LiveMetric.catalystTemp4: return _catalystTemp4;
+      case LiveMetric.fuelPressure: return _fuelPressure;
+      case LiveMetric.shortTermFuelTrim1: return _shortTermFuelTrim1;
+      case LiveMetric.longTermFuelTrim1: return _longTermFuelTrim1;
+      case LiveMetric.shortTermFuelTrim2: return _shortTermFuelTrim2;
+      case LiveMetric.longTermFuelTrim2: return _longTermFuelTrim2;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    final yRange = _computeYRange();
+    final minY = yRange.$1;
+    final maxY = yRange.$2;
+    final range = (maxY - minY).abs();
+    final yInterval = range <= 0 ? 1.0 : (range / 5).clamp(1, 100000).toDouble();
     return Scaffold(
       appBar: AppBar(
         title: const Text('Live Data Chart'),
-        backgroundColor: const Color(0xFF0D47A1),
+        backgroundColor: const Color(0xFF2E7D32),
         foregroundColor: Colors.white,
         actions: [
           IconButton(
@@ -377,7 +533,7 @@ class _LiveDataChartScreenState extends State<LiveDataChartScreen> {
           Container(
             width: double.infinity,
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            color: const Color(0xFF0D47A1).withOpacity(0.1),
+            color: const Color(0xFF2E7D32).withOpacity(0.1),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -398,17 +554,20 @@ class _LiveDataChartScreenState extends State<LiveDataChartScreen> {
               padding: const EdgeInsets.all(16),
               child: LineChart(
                 LineChartData(
-                  gridData: const FlGridData(show: true),
+                  gridData: const FlGridData(
+                    show: true,
+                    // interval set by leftTitles below
+                  ),
                   titlesData: FlTitlesData(
                     leftTitles: AxisTitles(
                       sideTitles: SideTitles(
                         showTitles: true,
-                        reservedSize: 40,
-                        interval: 1,
+                        reservedSize: 44,
+                        interval: yInterval,
                         getTitlesWidget: (value, meta) {
                           return Text(
                             value.toInt().toString(),
-                            style: const TextStyle(fontSize: 10),
+                            style: const TextStyle(fontSize: 10, color: Colors.white70),
                           );
                         },
                       ),
@@ -432,45 +591,49 @@ class _LiveDataChartScreenState extends State<LiveDataChartScreen> {
                   lineBarsData: _getLineBars(),
                   minX: _tick > 120 ? (_tick - 120).toDouble() : 0,
                   maxX: _tick.toDouble(),
-                  minY: 0,
-                  maxY: 100,
+                  minY: minY,
+                  maxY: maxY,
                 ),
               ),
             ),
           ),
           // Compact legend
-          Container(
-            height: 60,
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
-                children: _getLineBars().asMap().entries.map((entry) {
-                  final index = entry.key;
-                  final bar = entry.value;
-                  final colors = [
-                    Colors.red, Colors.blue, Colors.green, Colors.orange, Colors.purple,
-                    Colors.teal, Colors.pink, Colors.indigo, Colors.amber, Colors.cyan,
-                  ];
-                  return Container(
-                    margin: const EdgeInsets.only(right: 12),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Container(
-                          width: 12,
-                          height: 12,
-                          color: colors[index % colors.length],
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          _getMetricName(index),
-                          style: const TextStyle(fontSize: 10),
-                        ),
-                      ],
-                    ),
-                  );
-                }).toList(),
+          SafeArea(
+            bottom: true,
+            minimum: const EdgeInsets.only(bottom: 8),
+            child: Container(
+              height: 60,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  children: _getLineBars().asMap().entries.map((entry) {
+                    final index = entry.key;
+                    final bar = entry.value;
+                    final colors = [
+                      Colors.red, Colors.blue, Colors.green, Colors.orange, Colors.purple,
+                      Colors.teal, Colors.pink, Colors.indigo, Colors.amber, Colors.cyan,
+                    ];
+                    return Container(
+                      margin: const EdgeInsets.only(right: 12),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            width: 12,
+                            height: 12,
+                            color: colors[index % colors.length],
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            _getMetricName(index),
+                            style: const TextStyle(fontSize: 10),
+                          ),
+                        ],
+                      ),
+                    );
+                  }).toList(),
+                ),
               ),
             ),
           ),

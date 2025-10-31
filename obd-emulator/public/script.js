@@ -33,6 +33,8 @@ const elements = {
     ecuPlus: document.getElementById('ecuPlus'),
     clearLogBtn: document.getElementById('clearLogBtn'),
     toggleLiveDataViewBtn: document.getElementById('toggleLiveDataViewBtn'),
+    // Live mode toggle
+    liveModeToggle: document.getElementById('liveModeToggle'),
     
     // Live data
     connectedClients: document.getElementById('connectedClients'),
@@ -106,6 +108,15 @@ const elements = {
     liveDataGrid: document.getElementById('liveDataGrid')
 };
 
+const dtcEls = {
+  btnStored: document.getElementById('btnDtcStored'),
+  btnPending: document.getElementById('btnDtcPending'),
+  btnPermanent: document.getElementById('btnDtcPermanent'),
+  btnClear: document.getElementById('btnDtcClear'),
+  list: document.getElementById('dtcList'),
+  mil: document.getElementById('milStatus'),
+};
+
 // Current configuration
 let currentConfig = {};
 
@@ -117,7 +128,23 @@ document.addEventListener('DOMContentLoaded', function() {
     loadConfiguration();
     setupEventListeners();
     initLiveDataViewMode();
-    
+    initLiveModeFromServer();
+
+    // DTC buttons
+    if (dtcEls.btnStored) dtcEls.btnStored.addEventListener('click', () => loadDtc('stored'));
+    if (dtcEls.btnPending) dtcEls.btnPending.addEventListener('click', () => loadDtc('pending'));
+    if (dtcEls.btnPermanent) dtcEls.btnPermanent.addEventListener('click', () => loadDtc('permanent'));
+    if (dtcEls.btnClear) dtcEls.btnClear.addEventListener('click', () => clearDtc());
+
+    // Auto load stored on start
+    setTimeout(() => loadDtc('stored'), 300);
+
+    // Socket events
+    socket.on('dtcCleared', () => {
+        addLogEntry('INFO', 'DTC cleared');
+        loadDtc('stored');
+    });
+
     // Request current configuration from server
     fetch('/api/config')
         .then(response => response.json())
@@ -208,6 +235,41 @@ function updateUI() {
     updateStatus(currentConfig.isRunning);
 }
 
+// Init live mode from server
+function initLiveModeFromServer() {
+    fetch('/api/live')
+        .then(r => r.json())
+        .then(data => {
+            const mode = (data && data.mode) || 'random';
+            applyLiveModeToUI(mode);
+        })
+        .catch(() => {});
+}
+
+function applyLiveModeToUI(mode) {
+    if (!elements.liveModeToggle) return;
+    elements.liveModeToggle.checked = mode !== 'static';
+}
+
+function setLiveMode(mode) {
+    fetch('/api/live/mode', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mode })
+    })
+    .then(r => r.json())
+    .then(res => {
+        if (res && res.success) {
+            addLogEntry('INFO', `Live mode set to ${mode}`);
+        } else {
+            addLogEntry('ERROR', 'Failed to set live mode');
+        }
+    })
+    .catch(err => {
+        addLogEntry('ERROR', 'Failed to set live mode: ' + err.message);
+    });
+}
+
 // Setup event listeners
 function setupEventListeners() {
     // Control buttons
@@ -258,6 +320,14 @@ function setupEventListeners() {
     toggles.forEach(toggle => {
         toggle.addEventListener('change', saveConfiguration);
     });
+
+    // Live mode toggle change
+    if (elements.liveModeToggle) {
+        elements.liveModeToggle.addEventListener('change', () => {
+            const mode = elements.liveModeToggle.checked ? 'random' : 'static';
+            setLiveMode(mode);
+        });
+    }
 }
 
 // Live Data view mode (scroll/full)
@@ -551,3 +621,36 @@ window.addEventListener('unhandledrejection', (event) => {
 setInterval(() => {
     saveConfiguration();
 }, 5000);
+
+function loadDtc(type) {
+  fetch(`/api/dtc/${type}`)
+    .then(r => r.json())
+    .then(data => {
+      renderDtc(data);
+    })
+    .catch(() => {
+      renderDtc({ codes: [], milOn: false, type });
+    });
+}
+
+function clearDtc() {
+  fetch('/api/dtc/clear', { method: 'POST' })
+    .then(r => r.json())
+    .then(() => loadDtc('stored'))
+    .catch(() => {});
+}
+
+function renderDtc(data) {
+  if (!dtcEls.list) return;
+  const codes = data?.codes || [];
+  const type = data?.type || 'stored';
+  const milOn = !!data?.milOn;
+  if (dtcEls.mil) dtcEls.mil.textContent = `MIL: ${milOn ? 'ON' : 'OFF'}`;
+
+  if (codes.length === 0) {
+    dtcEls.list.innerHTML = '<div class="data-card">NO DATA</div>';
+    return;
+  }
+  const items = codes.map(c => `<div class="data-card"><div class="data-value" style="font-size:1rem;">${c}</div><div class="data-label">${type}</div></div>`).join('');
+  dtcEls.list.innerHTML = items;
+}

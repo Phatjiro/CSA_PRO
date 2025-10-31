@@ -109,12 +109,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
     Metric.baro,
     Metric.timingAdvance,
     Metric.fuelPressure,
-    Metric.catalystTemp,
+    Metric.catalystTemp1,
+    Metric.catalystTemp2,
+    Metric.catalystTemp3,
+    Metric.catalystTemp4,
     Metric.commandedEquivRatio,
     Metric.relativeThrottle,
-    Metric.runtimeSinceStart,
-    Metric.distanceSinceClear,
-    Metric.timeSinceCodesCleared,
   ];
   PageLayout page1Layout = PageLayout.large; // big RPM + 2 tiles
   PageLayout page2Layout = PageLayout.grid9;  // 3x3 grid (max 9)
@@ -170,6 +170,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             _pageContent(page1, page1Layout),
             _pageContent(page2, page2Layout),
             _pageContent(page3, page3Layout),
+            _allMetricsListPage(),
           ],
         ),
       ),
@@ -343,11 +344,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
         mainAxisAlignment: MainAxisAlignment.center,
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          Text(title, style: const TextStyle(fontSize: 12, color: Colors.white70)),
+          Text(title, 
+            textAlign: TextAlign.center,
+            style: const TextStyle(fontSize: 12, color: Colors.white70)),
           const Spacer(),
-          Text(value, style: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold)),
+          Text(value, 
+            textAlign: TextAlign.center,
+            style: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold)),
           if (unit != null)
-            Text(unit, style: const TextStyle(fontSize: 12, color: Colors.white70)),
+            Text(unit, 
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontSize: 12, color: Colors.white70)),
           const Spacer(),
         ],
       ),
@@ -578,6 +585,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
       required.addAll(page2);
     } else if (pageIndex == 2) {
       required.addAll(page3);
+    } else if (pageIndex == 3) {
+      // Trang 4: bật tất cả metrics để test nhanh
+      required.addAll(Metric.values);
     }
     final pids = _metricsToPids(required.toList());
     widget.client.setEnabledPids(pids);
@@ -616,7 +626,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
       case '012E': return Metric.commandedPurge;
       case '0130': return Metric.warmupsSinceClear;
       case '0131': return Metric.distanceSinceClear;
-      case '013C': return Metric.catalystTemp;
       case '0143': return Metric.absoluteLoad;
       case '0144': return Metric.commandedEquivRatio;
       case '0145': return Metric.relativeThrottle;
@@ -642,9 +651,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
       case '015A': return Metric.longTermO2Trim3;
       case '015B': return Metric.shortTermO2Trim4;
       case '015C': return Metric.longTermO2Trim4;
-      case '015D': return Metric.catalystTemp1;
-      case '015F': return Metric.catalystTemp2;
-      case '0160': return Metric.catalystTemp3;
+      case '013C': return Metric.catalystTemp1;
+      case '013D': return Metric.catalystTemp2;
+      case '013E': return Metric.catalystTemp3;
+      case '013F': return Metric.catalystTemp4;
       case '010A': return Metric.fuelPressure;
     }
     return null;
@@ -799,16 +809,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
           set.add('015C');
           break;
         case Metric.catalystTemp1:
-          set.add('015D');
+          set.add('013C');
           break;
         case Metric.catalystTemp2:
-          set.add('015F');
+          set.add('013D');
           break;
         case Metric.catalystTemp3:
-          set.add('0160');
+          set.add('013E');
           break;
         case Metric.catalystTemp4:
-          set.add('0160');
+          set.add('013F');
           break;
         case Metric.fuelPressure:
           set.add('010A');
@@ -904,6 +914,81 @@ class _DashboardScreenState extends State<DashboardScreen> {
           return _tile(e.key, e.value);
         },
       ),
+    );
+  }
+
+  Widget _allMetricsListPage() {
+    final entries = <MapEntry<String, String>>[
+      MapEntry('Engine RPM', '${_data.engineRpm} rpm'),
+      MapEntry('Vehicle Speed', '${_data.vehicleSpeedKmh} km/h'),
+      MapEntry('Coolant Temp', '${_data.coolantTempC} °C'),
+      MapEntry('Intake Temp', '${_data.intakeTempC} °C'),
+      MapEntry('Throttle Position', '${_data.throttlePositionPercent} %'),
+      MapEntry('Fuel Level', '${_data.fuelLevelPercent} %'),
+      MapEntry('Engine Load', '${_data.engineLoadPercent} %'),
+      MapEntry('MAP', '${_data.mapKpa} kPa'),
+      MapEntry('Baro', '${_data.baroKpa} kPa'),
+      MapEntry('MAF', '${_data.mafGs} g/s'),
+      MapEntry('Voltage', _format1(_data.voltageV) + ' V'),
+      MapEntry('Ambient', '${_data.ambientTempC} °C'),
+      MapEntry('Lambda', _format2(_data.lambda)),
+      MapEntry('Fuel System Status', '${_data.fuelSystemStatus}'),
+      MapEntry('Timing Advance', '${_data.timingAdvance} °'),
+      MapEntry('Runtime Since Start', '${_data.runtimeSinceStart} s'),
+      MapEntry('Distance with MIL', '${_data.distanceWithMIL} km'),
+      MapEntry('Commanded Purge', '${_data.commandedPurge} %'),
+      MapEntry('Warm-ups Since Clear', '${_data.warmupsSinceClear}'),
+      MapEntry('Distance Since Clear', '${_data.distanceSinceClear} km'),
+      MapEntry('Catalyst Temp', '${_data.catalystTemp} °C'),
+      MapEntry('Absolute Load', '${_data.absoluteLoad} %'),
+      MapEntry('Commanded Equiv Ratio', _format2(_data.commandedEquivRatio)),
+      MapEntry('Relative Throttle', '${_data.relativeThrottle} %'),
+      MapEntry('Abs Throttle B', '${_data.absoluteThrottleB} %'),
+      MapEntry('Abs Throttle C', '${_data.absoluteThrottleC} %'),
+      MapEntry('Pedal Position D', '${_data.pedalPositionD} %'),
+      MapEntry('Pedal Position E', '${_data.pedalPositionE} %'),
+      MapEntry('Pedal Position F', '${_data.pedalPositionF} %'),
+      MapEntry('Throttle Actuator', '${_data.commandedThrottleActuator} %'),
+      MapEntry('Time Run With MIL', '${_data.timeRunWithMIL} s'),
+      MapEntry('Time Since Codes Cleared', '${_data.timeSinceCodesCleared} s'),
+      MapEntry('Max Equiv Ratio', _format2(_data.maxEquivRatio)),
+      MapEntry('Max Air Flow', '${_data.maxAirFlow} g/s'),
+      MapEntry('Fuel Type', '${_data.fuelType}'),
+      MapEntry('Ethanol Fuel %', '${_data.ethanolFuel} %'),
+      MapEntry('Abs Evap Pressure', '${_data.absEvapPressure} kPa'),
+      MapEntry('Evap Pressure', '${_data.evapPressure} kPa'),
+      MapEntry('ST O2 Trim 1', '${_data.shortTermO2Trim1} %'),
+      MapEntry('LT O2 Trim 1', '${_data.longTermO2Trim1} %'),
+      MapEntry('ST O2 Trim 2', '${_data.shortTermO2Trim2} %'),
+      MapEntry('LT O2 Trim 2', '${_data.longTermO2Trim2} %'),
+      MapEntry('ST O2 Trim 3', '${_data.shortTermO2Trim3} %'),
+      MapEntry('LT O2 Trim 3', '${_data.longTermO2Trim3} %'),
+      MapEntry('ST O2 Trim 4', '${_data.shortTermO2Trim4} %'),
+      MapEntry('LT O2 Trim 4', '${_data.longTermO2Trim4} %'),
+      MapEntry('Catalyst Temp 1', '${_data.catalystTemp1} °C'),
+      MapEntry('Catalyst Temp 2', '${_data.catalystTemp2} °C'),
+      MapEntry('Catalyst Temp 3', '${_data.catalystTemp3} °C'),
+      MapEntry('Catalyst Temp 4', '${_data.catalystTemp4} °C'),
+      MapEntry('Fuel Pressure', '${_data.fuelPressure} kPa'),
+      MapEntry('ST Fuel Trim 1', '${_data.shortTermFuelTrim1} %'),
+      MapEntry('LT Fuel Trim 1', '${_data.longTermFuelTrim1} %'),
+      MapEntry('ST Fuel Trim 2', '${_data.shortTermFuelTrim2} %'),
+      MapEntry('LT Fuel Trim 2', '${_data.longTermFuelTrim2} %'),
+    ];
+
+    return ListView.separated(
+      padding: const EdgeInsets.all(8),
+      itemCount: entries.length,
+      separatorBuilder: (_, __) => const Divider(height: 1),
+      itemBuilder: (context, index) {
+        final e = entries[index];
+        return ListTile(
+          dense: true,
+          visualDensity: const VisualDensity(vertical: -2),
+          title: Text(e.key),
+          trailing: Text(e.value, style: const TextStyle(fontWeight: FontWeight.w600)),
+        );
+      },
     );
   }
 }

@@ -217,7 +217,7 @@ class _LiveDataSelectScreenState extends State<LiveDataSelectScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Select Live Data'),
-        backgroundColor: const Color(0xFF0D47A1),
+        backgroundColor: const Color(0xFF2E7D32),
         foregroundColor: Colors.white,
         elevation: 0,
       ),
@@ -227,7 +227,7 @@ class _LiveDataSelectScreenState extends State<LiveDataSelectScreen> {
           Container(
             width: double.infinity,
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            color: const Color(0xFF0D47A1).withOpacity(0.1),
+            color: const Color(0xFF2E7D32).withOpacity(0.1),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -268,24 +268,37 @@ class _LiveDataSelectScreenState extends State<LiveDataSelectScreen> {
                 ),
                 // Filtered metrics list
                 Expanded(
-                  child: ListView.builder(
-                    itemCount: _filteredMetrics.length,
-                    itemBuilder: (context, index) {
+                  child: Theme(
+                    data: Theme.of(context).copyWith(
+                      checkboxTheme: CheckboxThemeData(
+                        side: BorderSide(color: Colors.white.withOpacity(0.5)),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+                        fillColor: MaterialStateProperty.resolveWith((states) {
+                          if (states.contains(MaterialState.selected)) return const Color(0xFF2E7D32);
+                          return Colors.transparent; // tránh chói trên nền tối khi chưa chọn
+                        }),
+                        checkColor: MaterialStateProperty.all(Colors.white),
+                      ),
+                    ),
+                    child: ListView.builder(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      itemCount: _filteredMetrics.length,
+                      itemBuilder: (context, index) {
                       final metric = _filteredMetrics[index];
                       final isSelected = _selected[metric] ?? false;
                       final label = labels[metric] ?? metric.name;
 
-                      return Container(
+                        return Container(
                         margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
                         decoration: BoxDecoration(
-                          color: isSelected 
-                              ? const Color(0xFF0D47A1).withOpacity(0.1)
-                              : Colors.grey[50],
+                            color: isSelected 
+                                ? const Color(0xFF2E7D32).withOpacity(0.12)
+                                : Colors.white.withOpacity(0.04),
                           borderRadius: BorderRadius.circular(8),
                           border: Border.all(
-                            color: isSelected 
-                                ? const Color(0xFF0D47A1)
-                                : Colors.grey[200]!,
+                              color: isSelected 
+                                  ? const Color(0xFF2E7D32)
+                                  : Colors.white.withOpacity(0.08),
                             width: 1,
                           ),
                         ),
@@ -294,8 +307,8 @@ class _LiveDataSelectScreenState extends State<LiveDataSelectScreen> {
                             label,
                             style: TextStyle(
                               fontSize: 13,
-                              fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-                              color: isSelected ? const Color(0xFF0D47A1) : Colors.black87,
+                                fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                                color: isSelected ? const Color(0xFF2E7D32) : Colors.white70,
                             ),
                           ),
                           value: isSelected,
@@ -304,74 +317,92 @@ class _LiveDataSelectScreenState extends State<LiveDataSelectScreen> {
                               _selected[metric] = value ?? false;
                             });
                           },
-                          activeColor: const Color(0xFF0D47A1),
+                          activeColor: const Color(0xFF2E7D32),
                           dense: true,
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                         ),
                       );
                     },
                   ),
                 ),
+                ),
               ],
             ),
           ),
-          // Compact action buttons
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.1),
-                  blurRadius: 4,
-                  offset: const Offset(0, -2),
+          // Compact action buttons (SafeArea để không bị che bởi bottom bar)
+          SafeArea(
+            top: false,
+            child: Container(
+              padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Colors.white.withOpacity(0.04),
+                    Colors.white.withOpacity(0.02),
+                  ],
                 ),
-              ],
-            ),
-            child: Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton(
-                    onPressed: () {
-                      setState(() {
-                        _selected.updateAll((key, value) => false);
-                      });
-                    },
-                    style: OutlinedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                    ),
-                    child: const Text('Clear All'),
+                border: Border(
+                  top: BorderSide(color: Colors.white.withOpacity(0.06), width: 1),
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.25),
+                    blurRadius: 12,
+                    offset: const Offset(0, -6),
                   ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: ElevatedButton(
-                    onPressed: _selected.values.any((v) => v)
-                        ? () {
-                            final selectedMetrics = _selected.entries
-                                .where((e) => e.value)
-                                .map((e) => e.key)
-                                .toList();
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => LiveDataChartScreen(
-                                  selectedMetrics: selectedMetrics,
-                                  client: ConnectionManager.instance.client!,
+                ],
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () {
+                        setState(() {
+                          _selected.updateAll((key, value) => false);
+                        });
+                      },
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        foregroundColor: Colors.white,
+                        side: BorderSide(color: Colors.white.withOpacity(0.24), width: 1),
+                      ),
+                      child: const Text('Clear All'),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: _selected.values.any((v) => v)
+                          ? () {
+                              final selectedMetrics = _selected.entries
+                                  .where((e) => e.value)
+                                  .map((e) => e.key)
+                                  .toList();
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => LiveDataChartScreen(
+                                    selectedMetrics: selectedMetrics,
+                                    client: ConnectionManager.instance.client!,
+                                  ),
                                 ),
-                              ),
-                            );
-                          }
-                        : null,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF0D47A1),
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 12),
+                              );
+                            }
+                          : null,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF2E7D32),
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                        elevation: 0,
+                      ),
+                      child: const Text('View Chart'),
                     ),
-                    child: const Text('View Chart'),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ],
