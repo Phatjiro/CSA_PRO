@@ -18,9 +18,11 @@ import 'mil_status_screen.dart';
 import 'emission_check_screen.dart';
 import 'multi_vehicle_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../services/vehicle_service.dart';
 import '../utils/prefs_keys.dart';
 import '../models/vehicle.dart';
 import 'package:flutter/foundation.dart';
+import 'demo_init_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -187,7 +189,9 @@ class _HomeScreenState extends State<HomeScreen> {
                   const SizedBox(width: 12),
                   Expanded(
                     child: OutlinedButton(
-                      onPressed: null,
+                      onPressed: () {
+                        showDemoInitDialog(context);
+                      },
                       child: const Text('Demo'),
                     ),
                   ),

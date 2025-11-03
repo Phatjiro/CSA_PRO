@@ -4,6 +4,7 @@ import 'obd_client.dart';
 import 'obd_link.dart';
 import 'tcp_obd_link.dart';
 import 'ble_obd_link.dart';
+import 'demo_obd_link.dart';
 import '../models/vehicle.dart';
 import 'vehicle_service.dart';
 
@@ -63,6 +64,19 @@ class ConnectionManager {
     _client = null;
     isConnected.value = false;
     currentVehicle.value = null;
+  }
+
+  // New: connect via Demo transport (no hardware/emulator needed)
+  Future<void> connectDemo({Vehicle? vehicle}) async {
+    await disconnect();
+    final client = ObdClient.withLink(DemoObdLink());
+    await client.connect();
+    _client = client;
+    currentVehicle.value = vehicle;
+    isConnected.value = true;
+    if (vehicle != null) {
+      await VehicleService.updateLastConnected(vehicle.id);
+    }
   }
 }
 
