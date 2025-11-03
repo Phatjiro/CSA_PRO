@@ -4,10 +4,12 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import '../models/obd_live_data.dart';
+import 'obd_link.dart';
 
 class ObdClient {
   final String host;
   final int port;
+  ObdLink? _link; // Optional transport abstraction
 
   Socket? _socket;
   final StreamController<ObdLiveData> _dataController =
@@ -26,6 +28,12 @@ class ObdClient {
   Set<String> get enabledPids => _enabledPids;
 
   ObdClient({required this.host, required this.port});
+
+  // New: construct with a generic link (TCP, BLE, SPP)
+  ObdClient.withLink(ObdLink link)
+      : host = 'link',
+        port = -1,
+        _link = link;
 
   Stream<ObdLiveData> get dataStream => _dataController.stream;
 
@@ -215,10 +223,15 @@ class ObdClient {
   }
 
   Future<void> connect() async {
-    _socket = await Socket.connect(host, port, timeout: const Duration(seconds: 5));
-    _socket!.listen(_onData, onDone: disconnect, onError: (_) => disconnect());
+    if (_link != null) {
+      await _link!.connect();
+      _link!.rx.listen(_onStringData, onDone: disconnect, onError: (_) => disconnect());
+    } else {
+      _socket = await Socket.connect(host, port, timeout: const Duration(seconds: 5));
+      _socket!.listen(_onData, onDone: disconnect, onError: (_) => disconnect());
+    }
 
-    // Basic ELM init sequence
+    // Basic ELM init sequence (works for both TCP and BLE/SPP links)
     await _writeCommand('ATZ');
     await _writeCommand('ATE0'); // echo off
     await _writeCommand('ATL0'); // linefeeds off
@@ -236,13 +249,20 @@ class ObdClient {
   Future<void> disconnect() async {
     _pollTimer?.cancel();
     _pollTimer = null;
+    if (_link != null) {
+      await _link!.disconnect();
+    }
     await _socket?.close();
     _socket = null;
   }
 
-  bool get isConnected => _socket != null;
+  bool get isConnected => _link?.isConnected == true || _socket != null;
 
   Future<void> _writeCommand(String cmd) async {
+    if (_link != null) {
+      await _link!.tx(cmd);
+      return;
+    }
     final socket = _socket;
     if (socket == null) return;
     socket.add(utf8.encode('$cmd\r'));
@@ -251,6 +271,16 @@ class ObdClient {
 
   void _onData(Uint8List bytes) {
     final chunk = utf8.decode(bytes);
+    _buffer.write(chunk);
+    _idleTimer?.cancel();
+    _idleTimer = Timer(const Duration(milliseconds: 40), () {
+      _idleCompleter?.complete();
+      _idleCompleter = null;
+    });
+  }
+
+  // Process incoming text chunks from ObdLink (BLE/SPP)
+  void _onStringData(String chunk) {
     _buffer.write(chunk);
     _idleTimer?.cancel();
     _idleTimer = Timer(const Duration(milliseconds: 40), () {
