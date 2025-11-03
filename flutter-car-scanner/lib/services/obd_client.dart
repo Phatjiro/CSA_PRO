@@ -118,11 +118,15 @@ class ObdClient {
   Future<double?> readBatteryVoltage() async {
     try {
       final r = await _sendAndRead('0142');
-      final parts = r.trim().split(RegExp(r"\s+"));
-      if (parts.length < 4 || parts[0] != '41' || parts[1].toUpperCase() != '42') return null;
-      final a = int.parse(parts[2], radix: 16);
-      final b = int.parse(parts[3], radix: 16);
-      return ((256 * a) + b) / 1000.0;
+      // Use same parsing method as _parseVoltage() for consistency
+      final cleaned = r.replaceAll(RegExp(r"\s+"), '');
+      final i = cleaned.indexOf('4142');
+      if (i >= 0 && cleaned.length >= i + 8) {
+        final a = int.parse(cleaned.substring(i + 4, i + 6), radix: 16);
+        final b = int.parse(cleaned.substring(i + 6, i + 8), radix: 16);
+        return ((256 * a) + b) / 1000.0;
+      }
+      return null;
     } catch (_) {
       return null;
     }

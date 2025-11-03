@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter_car_scanner/services/connection_manager.dart';
+import 'package:flutter_car_scanner/services/vehicle_service.dart';
 
 class VehicleInfoScreen extends StatefulWidget {
   const VehicleInfoScreen({super.key});
@@ -34,7 +35,15 @@ class _VehicleInfoScreenState extends State<VehicleInfoScreen> {
         final url = Uri.parse('http://${client.host}:3000/api/config');
         final res = await http.get(url).timeout(const Duration(seconds: 2));
         if (res.statusCode == 200) {
-          setState(() { _cfg = json.decode(res.body) as Map<String, dynamic>; _loading = false; });
+          final cfg = json.decode(res.body) as Map<String, dynamic>;
+          setState(() { _cfg = cfg; _loading = false; });
+          
+          // Auto-update VIN to current vehicle if connected
+          final vehicle = ConnectionManager.instance.vehicle;
+          final vin = cfg['vinCode'] as String?;
+          if (vehicle != null && vin != null && vin.isNotEmpty && vin != '-') {
+            await VehicleService.updateVin(vehicle.id, vin);
+          }
           return;
         }
       } catch (_) {}
@@ -47,6 +56,12 @@ class _VehicleInfoScreenState extends State<VehicleInfoScreen> {
         };
         _loading = false;
       });
+      
+      // Auto-update VIN to current vehicle if connected
+      final vehicle = ConnectionManager.instance.vehicle;
+      if (vehicle != null && vin != null && vin.isNotEmpty) {
+        await VehicleService.updateVin(vehicle.id, vin);
+      }
     } catch (e) {
       setState(() { _error = 'Failed to load: ${e.toString()}'; _loading = false; });
     }

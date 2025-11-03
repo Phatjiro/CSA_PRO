@@ -15,8 +15,12 @@ import 'live_data_select_screen.dart';
 import 'read_codes_screen.dart';
 import 'freeze_frame_screen.dart';
 import 'mil_status_screen.dart';
+import 'emission_check_screen.dart';
+import 'multi_vehicle_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../utils/prefs_keys.dart';
+import '../models/vehicle.dart';
+import 'package:flutter/foundation.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -55,6 +59,17 @@ class _HomeScreenState extends State<HomeScreen> {
         title: const Text('Car Scanner'),
         actions: [
           IconButton(
+            tooltip: 'Vehicles',
+            icon: const Icon(Icons.directions_car),
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => const MultiVehicleScreen(initialTab: 0),
+                ),
+              );
+            },
+          ),
+          IconButton(
             tooltip: 'Settings',
             icon: const Icon(Icons.settings),
             onPressed: () {}, // placeholder
@@ -69,6 +84,39 @@ class _HomeScreenState extends State<HomeScreen> {
       body: SafeArea(
         child: Column(
           children: [
+            // Current vehicle indicator
+            ValueListenableBuilder<Vehicle?>(
+              valueListenable: ConnectionManager.instance.currentVehicle,
+              builder: (context, vehicle, _) {
+                if (vehicle == null) return const SizedBox.shrink();
+                return Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  color: Colors.blueAccent.withOpacity(0.1),
+                  child: Row(
+                    children: [
+                      Icon(Icons.directions_car, size: 18, color: Colors.blueAccent),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          vehicle.displayName,
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.blueAccent,
+                          ),
+                        ),
+                      ),
+                      if (vehicle.shortInfo != 'No info')
+                        Text(
+                          vehicle.shortInfo,
+                          style: TextStyle(fontSize: 11, color: Colors.white70),
+                        ),
+                    ],
+                  ),
+                );
+              },
+            ),
             Expanded(
               child: LayoutBuilder(
                 builder: (context, constraints) {
@@ -86,7 +134,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     _Group('Maintenance Service', const Color(0xFFF39C12), Icons.build_circle, [
                       _MenuItem(Icons.build, 'Service Tools', _Action.placeholder),
                       _MenuItem(Icons.science, 'Emission Tools', _Action.openEmission),
-                      _MenuItem(Icons.fact_check, 'Emission Check', _Action.placeholder),
+                      _MenuItem(Icons.fact_check, 'Emission Check', _Action.openEmissionCheck),
                       _MenuItem(Icons.directions_car_filled, 'Vehicle Info', _Action.openVehicleInfo),
                     ]),
                     _Group('Smart Features', const Color(0xFF7D3C98), Icons.psychology, [
@@ -97,7 +145,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     ]),
                     _Group('Smart Features+', const Color(0xFFE91E63), Icons.dashboard_customize, [
                       _MenuItem(Icons.speed, 'Custom Dashboard', _Action.openDashboard),
-                      _MenuItem(Icons.directions_car, 'Multi Vehicle', _Action.placeholder),
+                      _MenuItem(Icons.directions_car, 'Multi Vehicle', _Action.openVehicleList),
                       _MenuItem(Icons.sports_motorsports, 'Racing Mode', _Action.openAcceleration),
                     ]),
                     _Group('Specialized Features', const Color(0xFF9B59B6), Icons.security, [
@@ -241,7 +289,7 @@ class _MenuTile extends StatelessWidget {
   }
 }
 
-enum _Action { openDashboard, openLiveData, openAcceleration, openEmission, openReadCodes, openFreezeFrame, openMilStatus, openMode06, openLogbook, openVehicleInfo, openO2Test, openBatteryDetection, openPlaceholder, placeholder }
+enum _Action { openDashboard, openLiveData, openAcceleration, openEmission, openEmissionCheck, openReadCodes, openFreezeFrame, openMilStatus, openMode06, openLogbook, openVehicleInfo, openO2Test, openBatteryDetection, openVehicleList, openMaintenance, openPlaceholder, placeholder }
 
 class _Section extends StatelessWidget {
   final String title;
@@ -343,6 +391,16 @@ class _Section extends StatelessWidget {
                         }
                         Navigator.of(context).push(MaterialPageRoute(builder: (_) => const EmissionTestsScreen()));
                         break;
+                      case _Action.openEmissionCheck:
+                        final clientEC = ConnectionManager.instance.client;
+                        if (clientEC == null) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Not connected. Please CONNECT first.')),
+                          );
+                          return;
+                        }
+                        Navigator.of(context).push(MaterialPageRoute(builder: (_) => const EmissionCheckScreen()));
+                        break;
                       case _Action.openMode06:
                         final client06 = ConnectionManager.instance.client;
                         if (client06 == null) {
@@ -358,6 +416,16 @@ class _Section extends StatelessWidget {
                         break;
                       case _Action.openVehicleInfo:
                         Navigator.of(context).push(MaterialPageRoute(builder: (_) => const VehicleInfoScreen()));
+                        break;
+                      case _Action.openVehicleList:
+                        Navigator.of(context).push(MaterialPageRoute(
+                          builder: (_) => const MultiVehicleScreen(initialTab: 0),
+                        ));
+                        break;
+                      case _Action.openMaintenance:
+                        Navigator.of(context).push(MaterialPageRoute(
+                          builder: (_) => const MultiVehicleScreen(initialTab: 1),
+                        ));
                         break;
                       case _Action.openO2Test:
                         final clientO2 = ConnectionManager.instance.client;
@@ -569,6 +637,16 @@ class _GroupCard extends StatelessWidget {
                               }
                               Navigator.of(context).push(MaterialPageRoute(builder: (_) => const EmissionTestsScreen()));
                               break;
+                            case _Action.openEmissionCheck:
+                              final clientEC = ConnectionManager.instance.client;
+                              if (clientEC == null) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(content: Text('Not connected. Please CONNECT first.')),
+                                );
+                                return;
+                              }
+                              Navigator.of(context).push(MaterialPageRoute(builder: (_) => const EmissionCheckScreen()));
+                              break;
                             case _Action.openMode06:
                               final client06 = ConnectionManager.instance.client;
                               if (client06 == null) {
@@ -590,6 +668,16 @@ class _GroupCard extends StatelessWidget {
                               break;
                             case _Action.openVehicleInfo:
                               Navigator.of(context).push(MaterialPageRoute(builder: (_) => const VehicleInfoScreen()));
+                              break;
+                            case _Action.openVehicleList:
+                              Navigator.of(context).push(MaterialPageRoute(
+                                builder: (_) => const MultiVehicleScreen(initialTab: 0),
+                              ));
+                              break;
+                            case _Action.openMaintenance:
+                              Navigator.of(context).push(MaterialPageRoute(
+                                builder: (_) => const MultiVehicleScreen(initialTab: 1),
+                              ));
                               break;
                             case _Action.openO2Test:
                               final clientO2 = ConnectionManager.instance.client;
@@ -849,6 +937,16 @@ void _openGroupChooser(BuildContext context, _Group g) {
                             }
                             Navigator.of(context).push(MaterialPageRoute(builder: (_) => const EmissionTestsScreen()));
                             break;
+                          case _Action.openEmissionCheck:
+                            final clientEC = ConnectionManager.instance.client;
+                            if (clientEC == null) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text('Not connected. Please CONNECT first.')),
+                              );
+                              return;
+                            }
+                            Navigator.of(context).push(MaterialPageRoute(builder: (_) => const EmissionCheckScreen()));
+                            break;
                           case _Action.openReadCodes:
                             Navigator.of(context).push(MaterialPageRoute(builder: (_) => const ReadCodesScreen()));
                             break;
@@ -863,6 +961,16 @@ void _openGroupChooser(BuildContext context, _Group g) {
                             break;
                           case _Action.openVehicleInfo:
                             Navigator.of(context).push(MaterialPageRoute(builder: (_) => const VehicleInfoScreen()));
+                            break;
+                          case _Action.openVehicleList:
+                            Navigator.of(context).push(MaterialPageRoute(
+                              builder: (_) => const MultiVehicleScreen(initialTab: 0),
+                            ));
+                            break;
+                          case _Action.openMaintenance:
+                            Navigator.of(context).push(MaterialPageRoute(
+                              builder: (_) => const MultiVehicleScreen(initialTab: 1),
+                            ));
                             break;
                           case _Action.openO2Test:
                             final clientO2 = ConnectionManager.instance.client;

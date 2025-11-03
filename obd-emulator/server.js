@@ -195,7 +195,7 @@ const obdPids = {
   '0131': '41 31 00 1F 40', // Distance traveled since codes cleared
   '0133': '41 33 65', // Barometric Pressure (101 kPa)
   '013C': '41 3C 00 1F 40', // Catalyst Temperature Bank 1 Sensor 1
-  '0142': '41 42 0A 8F', // Control Module Voltage
+  '0142': '41 42 30 D4', // Control Module Voltage (12.52V default)
   '0143': '41 43 24', // Absolute load value
   '0144': '41 44 0F A0', // Commanded Equivalence Ratio
   '0145': '41 45 28', // Relative throttle position

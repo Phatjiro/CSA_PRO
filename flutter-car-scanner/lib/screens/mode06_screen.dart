@@ -39,7 +39,12 @@ class _Mode06ScreenState extends State<Mode06Screen> {
         _items.add(_Mode06Item(tid: tid, name: _nameForTid(tid), value: res.$1, min: res.$2, max: res.$3));
       }
       final pass = _items.where((e) => e.value >= e.min && e.value <= e.max).length;
-      await LogService.add({ 'type': 'mode06', 'passCount': pass, 'total': _items.length });
+      await LogService.add({ 
+        'type': 'mode06', 
+        'passCount': pass, 
+        'total': _items.length,
+        'vehicleId': ConnectionManager.instance.vehicle?.id,
+      });
       if (mounted) setState(() => _loading = false);
     } catch (e) {
       if (!mounted) return;

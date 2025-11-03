@@ -57,6 +57,8 @@ class _AccelerationTestsScreenState extends State<AccelerationTestsScreen> {
       appBar: AppBar(
         centerTitle: true,
         title: Text('$_currentSpeed km/h'),
+        backgroundColor: const Color(0xFFE91E63),
+        foregroundColor: Colors.white,
       ),
       body: SafeArea(
         child: ListView.separated(

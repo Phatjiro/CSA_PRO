@@ -144,6 +144,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Live Dashboard'),
+        backgroundColor: const Color(0xFFE91E63),
+        foregroundColor: Colors.white,
         actions: [
           IconButton(
             onPressed: _openConfigure,

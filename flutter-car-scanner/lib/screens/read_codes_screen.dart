@@ -65,6 +65,7 @@ class _ReadCodesScreenState extends State<ReadCodesScreen> with SingleTickerProv
         'mil': _milOn,
         'storedCount': _stored.length,
         'dtcs': _stored,
+        'vehicleId': ConnectionManager.instance.vehicle?.id,
       });
     } catch (e) {
       if (mounted) {
@@ -99,7 +100,12 @@ class _ReadCodesScreenState extends State<ReadCodesScreen> with SingleTickerProv
     try {
       await _client!.clearDtc();
       await _refreshAll();
-      await LogService.add({ 'type': 'clear_codes', 'mil': _milOn, 'storedCount': _stored.length });
+      await LogService.add({ 
+        'type': 'clear_codes', 
+        'mil': _milOn, 
+        'storedCount': _stored.length,
+        'vehicleId': ConnectionManager.instance.vehicle?.id,
+      });
     } catch (e) {
       if (mounted) {
         setState(() {

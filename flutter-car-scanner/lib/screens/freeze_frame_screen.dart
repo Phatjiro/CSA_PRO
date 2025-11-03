@@ -71,6 +71,7 @@ class _FreezeFrameScreenState extends State<FreezeFrameScreen> {
       });
       if (anyHasData) {
         await LogService.add({
+          'vehicleId': ConnectionManager.instance.vehicle?.id,
           'type': 'freeze_frame',
           'ff': {
             '010C': rpm,
