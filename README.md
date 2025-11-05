@@ -1,91 +1,90 @@
 # CSA_PRO - Car Scanner & OBD Development Project
 
-Dự án phát triển hệ thống Car Scanner với OBD ELM327 Emulator và Flutter mobile app.
+A comprehensive OBD-II car scanner solution with ELM327 emulator and Flutter mobile application.
 
-## Cấu trúc dự án
+## Project Structure
 
 ```
 CSA_PRO/
 ├── obd-emulator/           # OBD ELM327 Emulator (Node.js)
-│   ├── server.js           # Main server file
-│   ├── package.json        # Dependencies
-│   ├── public/             # Web interface
-│   │   ├── index.html
-│   │   ├── styles.css
-│   │   └── script.js
-│   └── README.md           # OBD Emulator documentation
-│
 ├── flutter-car-scanner/    # Flutter Car Scanner App
-│   └── (sẽ được tạo sau)
-│
-└── README.md              # Project overview (file này)
+└── README.md
 ```
 
-## Các thành phần
+## Components
 
-### 1. OBD ELM327 Emulator (`obd-emulator/`)
-- **Mục đích**: Mô phỏng thiết bị OBD ELM327 để test và phát triển
-- **Công nghệ**: Node.js, Express, Socket.IO, TCP Server
-- **Tính năng**:
-  - Giao diện web để cấu hình và monitoring
-  - TCP Server nhận kết nối từ Car Scanner apps
-  - Mô phỏng hơn 200 OBD PIDs
-  - Live data monitoring và logging
-  - Real-time communication với Flutter app
+### OBD ELM327 Emulator
 
-### 2. Flutter Car Scanner App (`flutter-car-scanner/`)
-- **Mục đích**: Ứng dụng mobile để kết nối và đọc dữ liệu OBD
-- **Công nghệ**: Flutter, Dart
-- **Tính năng** (dự kiến):
-  - Kết nối TCP đến OBD Emulator
-  - Gửi OBD commands và nhận responses
-  - Hiển thị dữ liệu real-time (RPM, Speed, Temperature, v.v.)
-  - Giao diện đẹp tương tự Car Scanner apps trên thị trường
-  - Lưu trữ và phân tích dữ liệu
-  - Export báo cáo
+Node.js-based emulator that simulates ELM327 OBD-II adapters for development and testing.
 
-## Workflow phát triển
+**Features:**
+- Web interface for configuration and monitoring
+- TCP server for OBD-II connections
+- Supports 200+ OBD PIDs (Mode 01, 02, 03, 04, 06, 09)
+- Real-time data streaming
+- REST API for configuration
 
-1. **Khởi động OBD Emulator** để test và debug
-2. **Phát triển Flutter app** kết nối đến emulator
-3. **Test integration** giữa Flutter app và OBD emulator
-4. **Deploy và test** với thiết bị OBD thật
-
-## Cách sử dụng
-
-### Chạy OBD Emulator
+**Quick Start:**
 ```bash
 cd obd-emulator
 npm install
 npm start
 ```
-Truy cập: `http://localhost:3000`
+Access web interface at `http://localhost:3000`
 
-### Phát triển Flutter App
+### Flutter Car Scanner App
+
+Cross-platform mobile application for OBD-II diagnostics and vehicle monitoring.
+
+**Key Features:**
+- **Live Data**: Real-time dashboard with gauges and charts
+- **Diagnostics**: Read/clear DTCs, freeze frame analysis, MIL status
+- **Testing**: Mode 06 scan, O2 sensor test, battery detection, acceleration tests
+- **Emission**: Readiness monitors, emission compliance checking
+- **Vehicle Management**: Multi-vehicle support, maintenance tracking
+- **Connection**: TCP/IP, Bluetooth Low Energy (BLE), Demo mode
+
+**Quick Start:**
 ```bash
 cd flutter-car-scanner
-flutter create .
-# Phát triển app...
+flutter pub get
+flutter run
 ```
 
-## Lợi ích của cấu trúc này
+## Connection Options
 
-- ✅ **Tách biệt rõ ràng** giữa emulator và mobile app
-- ✅ **Dễ quản lý** và phát triển từng phần riêng biệt
-- ✅ **Có thể deploy độc lập** từng component
-- ✅ **Dễ dàng mở rộng** thêm các tính năng mới
-- ✅ **Team development** - nhiều người có thể làm việc song song
-- ✅ **Version control** tốt hơn với Git
+1. **TCP**: Connect to emulator or WiFi OBD adapter
+2. **BLE**: Bluetooth Low Energy connection
+3. **Demo**: Simulated data mode (no hardware required)
 
-## Roadmap
+## Technology Stack
 
-- [x] Tạo OBD ELM327 Emulator
-- [ ] Phát triển Flutter Car Scanner App
-- [ ] Integration testing
-- [ ] UI/UX improvements
-- [ ] Performance optimization
-- [ ] Documentation và deployment guides
+- **Backend**: Node.js, Express, Socket.IO
+- **Frontend**: Flutter, Dart
+- **Database**: Hive (local storage)
+- **Charts**: Flutter Chart, Syncfusion Gauges
 
-## Liên hệ
+## Supported Platforms
 
-Dự án phát triển bởi CSA_PRO team.
+- Android
+- iOS
+- Windows
+- Linux
+- macOS
+- Web
+
+## Features
+
+✅ Live data monitoring with real-time updates  
+✅ Diagnostic trouble code (DTC) reading and clearing  
+✅ Freeze frame analysis  
+✅ Component testing (Mode 06)  
+✅ O2 sensor diagnostics  
+✅ Battery voltage monitoring  
+✅ Emission readiness checking  
+✅ Multi-vehicle management  
+✅ Connection persistence across screens
+
+## License
+
+This project is developed by CSA_PRO team.
