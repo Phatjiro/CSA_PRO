@@ -1,7 +1,6 @@
 import 'package:flutter/foundation.dart';
 
 import 'obd_client.dart';
-import 'obd_link.dart';
 import 'tcp_obd_link.dart';
 import 'ble_obd_link.dart';
 import 'demo_obd_link.dart';

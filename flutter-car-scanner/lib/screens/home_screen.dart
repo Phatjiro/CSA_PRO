@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'dart:math' as math;
 
-import 'connect_screen.dart';
 import 'dashboard_screen.dart';
 import '../services/connection_manager.dart';
 import 'acceleration_tests_screen.dart';
@@ -25,12 +24,13 @@ import 'security_scan_screen.dart';
 import 'service_tools_screen.dart';
 import 'vehicle_specific_data_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../services/vehicle_service.dart';
+// removed unused: vehicle_service
 import '../utils/prefs_keys.dart';
 import '../models/vehicle.dart';
-import 'package:flutter/foundation.dart';
+// removed unused: foundation (material already covers used symbols)
 import 'demo_init_screen.dart';
-import 'settings_screen.dart';
+// settings is routed via named routes
+import '../routes.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -72,20 +72,14 @@ class _HomeScreenState extends State<HomeScreen> {
             tooltip: 'Vehicles',
             icon: const Icon(Icons.directions_car),
             onPressed: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (_) => const MultiVehicleScreen(initialTab: 0),
-                ),
-              );
+              Navigator.of(context).pushNamed(AppRoutes.multiVehicle, arguments: 0);
             },
           ),
           IconButton(
             tooltip: 'Settings',
             icon: const Icon(Icons.settings),
             onPressed: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => const SettingsScreen()),
-              );
+              Navigator.of(context).pushNamed(AppRoutes.settings);
             },
           ),
           IconButton(
@@ -106,7 +100,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 return Container(
                   width: double.infinity,
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  color: Colors.blueAccent.withOpacity(0.1),
+                  color: Colors.blueAccent.withValues(alpha: 0.1),
                   child: Row(
                     children: [
                       Icon(Icons.directions_car, size: 18, color: Colors.blueAccent),
@@ -191,9 +185,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   Expanded(
                     child: ElevatedButton(
                       onPressed: () {
-                        Navigator.of(context).push(
-                          MaterialPageRoute(builder: (_) => const ConnectScreen()),
-                        );
+                        Navigator.of(context).pushNamed(AppRoutes.connect);
                       },
                       child: const Text('CONNECT'),
                     ),
@@ -222,6 +214,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       onPressed: () async {
                         try {
                           await ConnectionManager.instance.disconnect();
+                          if (!context.mounted) return;
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(content: Text('Disconnected')),
                           );
@@ -282,14 +275,14 @@ class _MenuTile extends StatelessWidget {
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
             colors: [
-              Colors.white.withOpacity(0.04),
-              Colors.white.withOpacity(0.02),
+              Colors.white.withValues(alpha: 0.04),
+              Colors.white.withValues(alpha: 0.02),
             ],
           ),
-          border: Border.all(color: Colors.white.withOpacity(0.06), width: 1),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.06), width: 1),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.2),
+              color: Colors.black.withValues(alpha: 0.2),
               blurRadius: 10,
               offset: const Offset(0, 6),
             ),
@@ -305,10 +298,10 @@ class _MenuTile extends StatelessWidget {
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 gradient: LinearGradient(
-                  colors: [accentColor.withOpacity(0.9), accentColor.withOpacity(0.5)],
+                  colors: [accentColor.withValues(alpha: 0.9), accentColor.withValues(alpha: 0.5)],
                 ),
                 boxShadow: [
-                  BoxShadow(color: accentColor.withOpacity(0.4), blurRadius: 10, offset: const Offset(0, 4)),
+                  BoxShadow(color: accentColor.withValues(alpha: 0.4), blurRadius: 10, offset: const Offset(0, 4)),
                 ],
               ),
               child: Icon(item.icon, size: 24, color: Colors.white),
@@ -347,17 +340,17 @@ class _Section extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(16),
-        gradient: LinearGradient(
+          gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            color.withOpacity(0.18),
-            color.withOpacity(0.06),
+            color.withValues(alpha: 0.18),
+            color.withValues(alpha: 0.06),
           ],
         ),
-        border: Border.all(color: Colors.white.withOpacity(0.08), width: 1),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.08), width: 1),
         boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.25), blurRadius: 16, offset: const Offset(0, 8)),
+          BoxShadow(color: Colors.black.withValues(alpha: 0.25), blurRadius: 16, offset: const Offset(0, 8)),
         ],
       ),
       child: Padding(
@@ -370,7 +363,7 @@ class _Section extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(
-                    color: color.withOpacity(0.9),
+                    color: color.withValues(alpha: 0.9),
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(title, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Colors.white)),
@@ -403,7 +396,7 @@ class _Section extends StatelessWidget {
                           );
                           return;
                         }
-                        Navigator.of(context).push(MaterialPageRoute(builder: (_) => DashboardScreen(client: client)));
+                        Navigator.of(context).pushNamed(AppRoutes.dashboard);
                         break;
                       case _Action.openLiveData:
                         final client = ConnectionManager.instance.client;
@@ -413,7 +406,7 @@ class _Section extends StatelessWidget {
                           );
                           return;
                         }
-                        Navigator.of(context).push(MaterialPageRoute(builder: (_) => const LiveDataSelectScreen()));
+                        Navigator.of(context).pushNamed(AppRoutes.liveData);
                         break;
                       case _Action.openAcceleration:
                         final clientA = ConnectionManager.instance.client;
@@ -423,7 +416,7 @@ class _Section extends StatelessWidget {
                           );
                           return;
                         }
-                        Navigator.of(context).push(MaterialPageRoute(builder: (_) => const AccelerationTestsScreen()));
+                        Navigator.of(context).pushNamed(AppRoutes.acceleration);
                         break;
                       case _Action.openEmission:
                         final clientE = ConnectionManager.instance.client;
@@ -433,7 +426,7 @@ class _Section extends StatelessWidget {
                           );
                           return;
                         }
-                        Navigator.of(context).push(MaterialPageRoute(builder: (_) => const EmissionTestsScreen()));
+                        Navigator.of(context).pushNamed(AppRoutes.emissionTests);
                         break;
                       case _Action.openEmissionCheck:
                         final clientEC = ConnectionManager.instance.client;
@@ -443,7 +436,7 @@ class _Section extends StatelessWidget {
                           );
                           return;
                         }
-                        Navigator.of(context).push(MaterialPageRoute(builder: (_) => const EmissionCheckScreen()));
+                        Navigator.of(context).pushNamed(AppRoutes.emissionCheck);
                         break;
                       case _Action.openMode06:
                         final client06 = ConnectionManager.instance.client;
@@ -453,32 +446,12 @@ class _Section extends StatelessWidget {
                           );
                           return;
                         }
-                        Navigator.of(context).push(MaterialPageRoute(builder: (_) => const Mode06Screen()));
-                        break;
-                          case _Action.openServiceTools:
-                            Navigator.of(context).push(MaterialPageRoute(builder: (_) => const ServiceToolsScreen()));
-                            break;
-                      case _Action.openLogbook:
-                        Navigator.of(context).push(MaterialPageRoute(builder: (_) => const LogbookScreen()));
-                        break;
-                      case _Action.openIncidentHistory:
-                        Navigator.of(context).push(MaterialPageRoute(builder: (_) => const IncidentHistoryScreen()));
-                        break;
-                      case _Action.openAiMechanic:
-                        Navigator.of(context).push(MaterialPageRoute(builder: (_) => const AiMechanicScreen()));
-                        break;
-                      case _Action.openIssueForecast:
-                        Navigator.of(context).push(MaterialPageRoute(builder: (_) => const IssueForecastScreen()));
+                        Navigator.of(context).pushNamed(AppRoutes.mode06);
                         break;
                       case _Action.openServiceTools:
-                        Navigator.of(context).push(MaterialPageRoute(builder: (_) => const ServiceToolsScreen()));
+                        Navigator.of(context).pushNamed(AppRoutes.serviceTools);
                         break;
-                      case _Action.openRepairCost:
-                        Navigator.of(context).push(MaterialPageRoute(builder: (_) => const RepairCostScreen()));
-                        break;
-                      case _Action.openSecurityScan:
-                        Navigator.of(context).push(MaterialPageRoute(builder: (_) => const SecurityScanScreen()));
-                        break;
+                      
                       case _Action.openVehicleSpecificData:
                         final clientV = ConnectionManager.instance.client;
                         if (clientV == null) {
@@ -487,20 +460,16 @@ class _Section extends StatelessWidget {
                           );
                           return;
                         }
-                        Navigator.of(context).push(MaterialPageRoute(builder: (_) => const VehicleSpecificDataScreen()));
+                        Navigator.of(context).pushNamed(AppRoutes.vehicleSpecificData);
                         break;
                       case _Action.openVehicleInfo:
-                        Navigator.of(context).push(MaterialPageRoute(builder: (_) => const VehicleInfoScreen()));
+                        Navigator.of(context).pushNamed(AppRoutes.vehicleInfo);
                         break;
                       case _Action.openVehicleList:
-                        Navigator.of(context).push(MaterialPageRoute(
-                          builder: (_) => const MultiVehicleScreen(initialTab: 0),
-                        ));
+                        Navigator.of(context).pushNamed(AppRoutes.multiVehicle, arguments: 0);
                         break;
                       case _Action.openMaintenance:
-                        Navigator.of(context).push(MaterialPageRoute(
-                          builder: (_) => const MultiVehicleScreen(initialTab: 1),
-                        ));
+                        Navigator.of(context).pushNamed(AppRoutes.multiVehicle, arguments: 1);
                         break;
                       case _Action.openO2Test:
                         final clientO2 = ConnectionManager.instance.client;
@@ -510,7 +479,7 @@ class _Section extends StatelessWidget {
                           );
                           return;
                         }
-                        Navigator.of(context).push(MaterialPageRoute(builder: (_) => const O2TestScreen()));
+                        Navigator.of(context).pushNamed(AppRoutes.o2test);
                         break;
                       case _Action.openBatteryDetection:
                         final clientBat = ConnectionManager.instance.client;
@@ -520,25 +489,25 @@ class _Section extends StatelessWidget {
                           );
                           return;
                         }
-                        Navigator.of(context).push(MaterialPageRoute(builder: (_) => const BatteryDetectionScreen()));
+                        Navigator.of(context).pushNamed(AppRoutes.batteryDetection);
                         break;
                       case _Action.openLogbook:
-                        Navigator.of(context).push(MaterialPageRoute(builder: (_) => const LogbookScreen()));
+                        Navigator.of(context).pushNamed(AppRoutes.logbook);
                         break;
                       case _Action.openIncidentHistory:
-                        Navigator.of(context).push(MaterialPageRoute(builder: (_) => const IncidentHistoryScreen()));
+                        Navigator.of(context).pushNamed(AppRoutes.incidentHistory);
                         break;
                       case _Action.openAiMechanic:
-                        Navigator.of(context).push(MaterialPageRoute(builder: (_) => const AiMechanicScreen()));
+                        Navigator.of(context).pushNamed(AppRoutes.aiMechanic);
                         break;
                       case _Action.openIssueForecast:
-                        Navigator.of(context).push(MaterialPageRoute(builder: (_) => const IssueForecastScreen()));
+                        Navigator.of(context).pushNamed(AppRoutes.issueForecast);
                         break;
                       case _Action.openRepairCost:
-                        Navigator.of(context).push(MaterialPageRoute(builder: (_) => const RepairCostScreen()));
+                        Navigator.of(context).pushNamed(AppRoutes.repairCost);
                         break;
                       case _Action.openSecurityScan:
-                        Navigator.of(context).push(MaterialPageRoute(builder: (_) => const SecurityScanScreen()));
+                        Navigator.of(context).pushNamed(AppRoutes.securityScan);
                         break;
                       case _Action.openReadCodes:
                         final clientR = ConnectionManager.instance.client;
@@ -548,7 +517,7 @@ class _Section extends StatelessWidget {
                           );
                           return;
                         }
-                        Navigator.of(context).push(MaterialPageRoute(builder: (_) => const ReadCodesScreen()));
+                        Navigator.of(context).pushNamed(AppRoutes.readCodes);
                         break;
                       case _Action.openFreezeFrame:
                         final clientF = ConnectionManager.instance.client;
@@ -558,7 +527,7 @@ class _Section extends StatelessWidget {
                           );
                           return;
                         }
-                        Navigator.of(context).push(MaterialPageRoute(builder: (_) => const FreezeFrameScreen()));
+                        Navigator.of(context).pushNamed(AppRoutes.freezeFrame);
                         break;
                       case _Action.openMilStatus:
                         final clientM = ConnectionManager.instance.client;
@@ -568,11 +537,10 @@ class _Section extends StatelessWidget {
                           );
                           return;
                         }
-                        Navigator.of(context).push(MaterialPageRoute(builder: (_) => const MilStatusScreen()));
+                        Navigator.of(context).pushNamed(AppRoutes.milStatus);
                         break;
                       case _Action.openPlaceholder:
                       case _Action.placeholder:
-                      default:
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(content: Text('Coming soon: ${it.title}')),
                         );
@@ -606,11 +574,11 @@ class _GroupCard extends StatelessWidget {
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(18),
           gradient: LinearGradient(
-            colors: [color.withOpacity(0.16), color.withOpacity(0.06)],
+            colors: [color.withValues(alpha: 0.16), color.withValues(alpha: 0.06)],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
-          border: Border.all(color: Colors.white.withOpacity(0.08)),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
         ),
         child: Row(
           children: [
@@ -619,7 +587,7 @@ class _GroupCard extends StatelessWidget {
               height: 56,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                gradient: LinearGradient(colors: [color.withOpacity(0.9), color.withOpacity(0.5)]),
+                gradient: LinearGradient(colors: [color.withValues(alpha: 0.9), color.withValues(alpha: 0.5)]),
               ),
               child: Icon(icon, color: Colors.white, size: 30),
             ),
@@ -630,11 +598,11 @@ class _GroupCard extends StatelessWidget {
                 children: [
                   Text(title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
                   const SizedBox(height: 4),
-                  Text('Tap to view features', style: TextStyle(color: Colors.white.withOpacity(0.7), fontSize: 12)),
+                  Text('Tap to view features', style: TextStyle(color: Colors.white.withValues(alpha: 0.7), fontSize: 12)),
                 ],
               ),
             ),
-            Icon(Icons.chevron_right, color: Colors.white.withOpacity(0.8))
+            Icon(Icons.chevron_right, color: Colors.white.withValues(alpha: 0.8))
           ],
         ),
       ),
@@ -664,7 +632,7 @@ class _GroupCard extends StatelessWidget {
                         height: 38,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          gradient: LinearGradient(colors: [color.withOpacity(0.9), color.withOpacity(0.5)]),
+                        gradient: LinearGradient(colors: [color.withValues(alpha: 0.9), color.withValues(alpha: 0.5)]),
                         ),
                         child: Icon(icon, color: Colors.white),
                       ),
@@ -748,6 +716,9 @@ class _GroupCard extends StatelessWidget {
                               }
                               Navigator.of(context).push(MaterialPageRoute(builder: (_) => const Mode06Screen()));
                               break;
+                            case _Action.openServiceTools:
+                              Navigator.of(context).push(MaterialPageRoute(builder: (_) => const ServiceToolsScreen()));
+                              break;
                             case _Action.openReadCodes:
                               Navigator.of(context).push(MaterialPageRoute(builder: (_) => const ReadCodesScreen()));
                               break;
@@ -820,7 +791,6 @@ class _GroupCard extends StatelessWidget {
                               break;
                             case _Action.openPlaceholder:
                             case _Action.placeholder:
-                            default:
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(content: Text('Coming soon: ${it.title}')),
                               );
@@ -921,16 +891,6 @@ class _RadialButton extends StatefulWidget {
 }
 
 class _RadialButtonState extends State<_RadialButton> with SingleTickerProviderStateMixin {
-  @override
-  void initState() {
-    super.initState();
-  }
-
-  @override
-  void dispose() {
-    super.dispose();
-  }
-
   void _handleTap() => widget.onPressed();
 
   @override
@@ -945,8 +905,8 @@ class _RadialButtonState extends State<_RadialButton> with SingleTickerProviderS
             height: 72,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              gradient: LinearGradient(colors: [widget.color.withOpacity(0.9), widget.color.withOpacity(0.5)]),
-              boxShadow: [BoxShadow(color: widget.color.withOpacity(0.4), blurRadius: 12, offset: const Offset(0, 6))],
+              gradient: LinearGradient(colors: [widget.color.withValues(alpha: 0.9), widget.color.withValues(alpha: 0.5)]),
+              boxShadow: [BoxShadow(color: widget.color.withValues(alpha: 0.4), blurRadius: 12, offset: const Offset(0, 6))],
             ),
             child: Icon(widget.icon, color: Colors.white, size: 34),
           ),
@@ -958,7 +918,7 @@ class _RadialButtonState extends State<_RadialButton> with SingleTickerProviderS
               textAlign: TextAlign.center,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: TextStyle(fontSize: 12, color: Colors.white.withOpacity(0.9), fontWeight: FontWeight.w600),
+              style: TextStyle(fontSize: 12, color: Colors.white.withValues(alpha: 0.9), fontWeight: FontWeight.w600),
             ),
           ),
         ],
@@ -990,7 +950,7 @@ void _openGroupChooser(BuildContext context, _Group g) {
                       height: 38,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        gradient: LinearGradient(colors: [g.color.withOpacity(0.9), g.color.withOpacity(0.5)]),
+                        gradient: LinearGradient(colors: [g.color.withValues(alpha: 0.9), g.color.withValues(alpha: 0.5)]),
                       ),
                       child: Icon(g.icon, color: Colors.white),
                     ),
@@ -1152,7 +1112,6 @@ void _openGroupChooser(BuildContext context, _Group g) {
                             break;
                           case _Action.openPlaceholder:
                           case _Action.placeholder:
-                          default:
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(content: Text('Coming soon: ${it.title}')),
                             );

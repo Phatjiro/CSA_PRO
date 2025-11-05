@@ -67,7 +67,8 @@ class _VehicleListScreenState extends State<VehicleListScreen> {
                   builder: (_) => const VehicleFormScreen(),
                 ),
               );
-              if (result != null && mounted) {
+              if (!mounted) return;
+              if (result != null) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(content: Text('Added "${result.displayName}"')),
                 );
@@ -89,14 +90,14 @@ class _VehicleListScreenState extends State<VehicleListScreen> {
                   Icon(
                     Icons.directions_car_outlined,
                     size: 64,
-                    color: Colors.white.withOpacity(0.5),
+                    color: Colors.white.withValues(alpha: 0.5),
                   ),
                   const SizedBox(height: 16),
                   Text(
                     'No vehicles yet',
                     style: TextStyle(
                       fontSize: 18,
-                      color: Colors.white.withOpacity(0.7),
+                      color: Colors.white.withValues(alpha: 0.7),
                     ),
                   ),
                   const SizedBox(height: 8),
@@ -104,7 +105,7 @@ class _VehicleListScreenState extends State<VehicleListScreen> {
                     'Tap + to add your first vehicle',
                     style: TextStyle(
                       fontSize: 14,
-                      color: Colors.white.withOpacity(0.5),
+                      color: Colors.white.withValues(alpha: 0.5),
                     ),
                   ),
                 ],
@@ -119,10 +120,10 @@ class _VehicleListScreenState extends State<VehicleListScreen> {
               final vehicle = vehicles[index];
               return Card(
                 margin: const EdgeInsets.only(bottom: 12),
-                color: Colors.white.withOpacity(0.05),
+                color: Colors.white.withValues(alpha: 0.05),
                 child: ListTile(
                   leading: CircleAvatar(
-                    backgroundColor: Colors.blueAccent.withOpacity(0.3),
+                    backgroundColor: Colors.blueAccent.withValues(alpha: 0.3),
                     child: const Icon(Icons.directions_car, color: Colors.white70),
                   ),
                   title: Row(
@@ -222,7 +223,8 @@ class _VehicleListScreenState extends State<VehicleListScreen> {
                               builder: (_) => VehicleFormScreen(vehicle: vehicle),
                             ),
                           );
-                          if (result != null && mounted) {
+                          if (!mounted) return;
+                          if (result != null) {
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(content: Text('Updated "${result.displayName}"')),
                             );
@@ -241,7 +243,8 @@ class _VehicleListScreenState extends State<VehicleListScreen> {
                         builder: (_) => VehicleFormScreen(vehicle: vehicle),
                       ),
                     );
-                    if (result != null && mounted) {
+                    if (!mounted) return;
+                    if (result != null) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(content: Text('Updated "${result.displayName}"')),
                       );

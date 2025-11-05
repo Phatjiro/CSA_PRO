@@ -155,7 +155,7 @@ class _ReadCodesScreenState extends State<ReadCodesScreen> with SingleTickerProv
           Container(
             width: double.infinity,
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-            color: Colors.white.withOpacity(0.04),
+            color: Colors.white.withValues(alpha: 0.04),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -170,7 +170,7 @@ class _ReadCodesScreenState extends State<ReadCodesScreen> with SingleTickerProv
               padding: const EdgeInsets.all(16),
               margin: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: Colors.red.withOpacity(0.2),
+                color: Colors.red.withValues(alpha: 0.2),
                 borderRadius: BorderRadius.circular(8),
                 border: Border.all(color: Colors.redAccent, width: 1),
               ),
@@ -249,7 +249,7 @@ class _ReadCodesScreenState extends State<ReadCodesScreen> with SingleTickerProv
 
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-      color: Colors.white.withOpacity(0.08),
+      color: Colors.white.withValues(alpha: 0.08),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
       ),
@@ -258,8 +258,8 @@ class _ReadCodesScreenState extends State<ReadCodesScreen> with SingleTickerProv
         child: InkWell(
           onTap: () => DtcHelper.searchOnGoogle(dtcCode),
           borderRadius: BorderRadius.circular(12),
-          splashColor: Colors.white.withOpacity(0.1),
-          highlightColor: Colors.white.withOpacity(0.05),
+          splashColor: Colors.white.withValues(alpha: 0.1),
+          highlightColor: Colors.white.withValues(alpha: 0.05),
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             child: Column(
@@ -336,7 +336,7 @@ class _ReadCodesScreenState extends State<ReadCodesScreen> with SingleTickerProv
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                             decoration: BoxDecoration(
-                              color: _getSeverityColor(severity).withOpacity(0.2),
+                              color: _getSeverityColor(severity).withValues(alpha: 0.2),
                               borderRadius: BorderRadius.circular(4),
                               border: Border.all(
                                 color: _getSeverityColor(severity),

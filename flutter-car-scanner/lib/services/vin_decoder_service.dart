@@ -9,7 +9,7 @@ class VinDecoderService {
     if (vin.isEmpty || vin == '-') return null;
 
     try {
-      final url = Uri.parse('$_baseUrl/${vin}?format=json');
+      final url = Uri.parse('$_baseUrl/$vin?format=json');
       final response = await http.get(url).timeout(const Duration(seconds: 10));
 
       if (response.statusCode != 200) return null;
@@ -72,7 +72,7 @@ class VinDecoderService {
         final disp = decoded['Displacement'] ?? '';
         final cyl = decoded['Cylinders'] ?? '';
         final config = decoded['Engine Config'] ?? '';
-        decoded['Engine'] = '${disp} ${config} ${cyl}-cyl'.trim();
+        decoded['Engine'] = '$disp $config $cyl-cyl'.trim();
         decoded.remove('Displacement');
         decoded.remove('Cylinders');
         decoded.remove('Engine Config');

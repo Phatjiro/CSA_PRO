@@ -69,7 +69,7 @@ class _MilStatusScreenState extends State<MilStatusScreen> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
-                  color: _milOn ? Colors.redAccent.withOpacity(0.2) : Colors.green.withOpacity(0.2),
+                  color: _milOn ? Colors.redAccent.withValues(alpha: 0.2) : Colors.green.withValues(alpha: 0.2),
                   border: Border.all(color: _milOn ? Colors.redAccent : Colors.greenAccent),
                   borderRadius: BorderRadius.circular(24),
                 ),
@@ -85,7 +85,7 @@ class _MilStatusScreenState extends State<MilStatusScreen> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.08),
+                  color: Colors.white.withValues(alpha: 0.08),
                   borderRadius: BorderRadius.circular(24),
                 ),
                 child: Text('Stored: $_storedCount'),
@@ -99,7 +99,7 @@ class _MilStatusScreenState extends State<MilStatusScreen> {
               width: double.infinity,
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.06),
+                color: Colors.white.withValues(alpha: 0.06),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: const Text(

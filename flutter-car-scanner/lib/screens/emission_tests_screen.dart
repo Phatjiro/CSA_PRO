@@ -76,7 +76,7 @@ class _EmissionTestsScreenState extends State<EmissionTestsScreen> {
                       Container(
                         width: double.infinity,
                         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                        color: Colors.white.withOpacity(0.04),
+                        color: Colors.white.withValues(alpha: 0.04),
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
@@ -129,7 +129,6 @@ class _EmissionTestsScreenState extends State<EmissionTestsScreen> {
     final cleaned = response.replaceAll(RegExp(r"\s+"), '');
     final i = cleaned.indexOf('4101');
     if (i < 0 || cleaned.length < i + 12) return {};
-    final a = int.parse(cleaned.substring(i + 4, i + 6), radix: 16);
     final b = int.parse(cleaned.substring(i + 6, i + 8), radix: 16);
     final c = int.parse(cleaned.substring(i + 8, i + 10), radix: 16);
     final d = int.parse(cleaned.substring(i + 10, i + 12), radix: 16);

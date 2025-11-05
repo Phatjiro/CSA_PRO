@@ -345,7 +345,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return Container(
       margin: const EdgeInsets.all(8),
       decoration: BoxDecoration(
-        color: const Color(0xFF0D47A1).withOpacity(0.08),
+        color: const Color(0xFF0D47A1).withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(12),
       ),
       padding: const EdgeInsets.all(16),
@@ -503,9 +503,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
         }
 
         void setSelected(List<Metric> value) {
-          if (currentPage == 0) page1 = value;
-          else if (currentPage == 1) page2 = value;
-          else page3 = value;
+          if (currentPage == 0) {
+            page1 = value;
+          } else if (currentPage == 1) {
+            page2 = value;
+          } else {
+            page3 = value;
+          }
         }
 
         PageLayout getLayout() {
@@ -515,9 +519,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
         }
 
         void setLayout(PageLayout layout) {
-          if (currentPage == 0) page1Layout = layout;
-          else if (currentPage == 1) page2Layout = layout;
-          else page3Layout = layout;
+          if (currentPage == 0) {
+            page1Layout = layout;
+          } else if (currentPage == 1) {
+            page2Layout = layout;
+          } else {
+            page3Layout = layout;
+          }
         }
 
         return DraggableScrollableSheet(
@@ -851,82 +859,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return set;
   }
 
-  Widget _allMetricsPage() {
-    final entries = <MapEntry<String, String>>[
-      MapEntry('Engine RPM', '${_data.engineRpm} rpm'),
-      MapEntry('Vehicle Speed', '${_data.vehicleSpeedKmh} km/h'),
-      MapEntry('Coolant Temp', '${_data.coolantTempC} °C'),
-      MapEntry('Intake Temp', '${_data.intakeTempC} °C'),
-      MapEntry('Throttle Position', '${_data.throttlePositionPercent} %'),
-      MapEntry('Fuel Level', '${_data.fuelLevelPercent} %'),
-      MapEntry('Engine Load', '${_data.engineLoadPercent} %'),
-      MapEntry('MAP', '${_data.mapKpa} kPa'),
-      MapEntry('Baro', '${_data.baroKpa} kPa'),
-      MapEntry('MAF', '${_data.mafGs} g/s'),
-      MapEntry('Voltage', _format1(_data.voltageV) + ' V'),
-      MapEntry('Ambient', '${_data.ambientTempC} °C'),
-      MapEntry('Lambda', _format2(_data.lambda)),
-      MapEntry('Fuel System Status', '${_data.fuelSystemStatus}'),
-      MapEntry('Timing Advance', '${_data.timingAdvance} °'),
-      MapEntry('Runtime Since Start', '${_data.runtimeSinceStart} s'),
-      MapEntry('Distance with MIL', '${_data.distanceWithMIL} km'),
-      MapEntry('Commanded Purge', '${_data.commandedPurge} %'),
-      MapEntry('Warm-ups Since Clear', '${_data.warmupsSinceClear}'),
-      MapEntry('Distance Since Clear', '${_data.distanceSinceClear} km'),
-      MapEntry('Catalyst Temp', '${_data.catalystTemp} °C'),
-      MapEntry('Absolute Load', '${_data.absoluteLoad} %'),
-      MapEntry('Commanded Equiv Ratio', _format2(_data.commandedEquivRatio)),
-      MapEntry('Relative Throttle', '${_data.relativeThrottle} %'),
-      MapEntry('Abs Throttle B', '${_data.absoluteThrottleB} %'),
-      MapEntry('Abs Throttle C', '${_data.absoluteThrottleC} %'),
-      MapEntry('Pedal Position D', '${_data.pedalPositionD} %'),
-      MapEntry('Pedal Position E', '${_data.pedalPositionE} %'),
-      MapEntry('Pedal Position F', '${_data.pedalPositionF} %'),
-      MapEntry('Throttle Actuator', '${_data.commandedThrottleActuator} %'),
-      MapEntry('Time Run With MIL', '${_data.timeRunWithMIL} s'),
-      MapEntry('Time Since Codes Cleared', '${_data.timeSinceCodesCleared} s'),
-      MapEntry('Max Equiv Ratio', _format2(_data.maxEquivRatio)),
-      MapEntry('Max Air Flow', '${_data.maxAirFlow} g/s'),
-      MapEntry('Fuel Type', '${_data.fuelType}'),
-      MapEntry('Ethanol Fuel %', '${_data.ethanolFuel} %'),
-      MapEntry('Abs Evap Pressure', '${_data.absEvapPressure} kPa'),
-      MapEntry('Evap Pressure', '${_data.evapPressure} kPa'),
-      MapEntry('ST O2 Trim 1', '${_data.shortTermO2Trim1} %'),
-      MapEntry('LT O2 Trim 1', '${_data.longTermO2Trim1} %'),
-      MapEntry('ST O2 Trim 2', '${_data.shortTermO2Trim2} %'),
-      MapEntry('LT O2 Trim 2', '${_data.longTermO2Trim2} %'),
-      MapEntry('ST O2 Trim 3', '${_data.shortTermO2Trim3} %'),
-      MapEntry('LT O2 Trim 3', '${_data.longTermO2Trim3} %'),
-      MapEntry('ST O2 Trim 4', '${_data.shortTermO2Trim4} %'),
-      MapEntry('LT O2 Trim 4', '${_data.longTermO2Trim4} %'),
-      MapEntry('Catalyst Temp 1', '${_data.catalystTemp1} °C'),
-      MapEntry('Catalyst Temp 2', '${_data.catalystTemp2} °C'),
-      MapEntry('Catalyst Temp 3', '${_data.catalystTemp3} °C'),
-      MapEntry('Catalyst Temp 4', '${_data.catalystTemp4} °C'),
-      MapEntry('Fuel Pressure', '${_data.fuelPressure} kPa'),
-      MapEntry('ST Fuel Trim 1', '${_data.shortTermFuelTrim1} %'),
-      MapEntry('LT Fuel Trim 1', '${_data.longTermFuelTrim1} %'),
-      MapEntry('ST Fuel Trim 2', '${_data.shortTermFuelTrim2} %'),
-      MapEntry('LT Fuel Trim 2', '${_data.longTermFuelTrim2} %'),
-    ];
-
-    return Padding(
-      padding: const EdgeInsets.all(8),
-      child: GridView.builder(
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 2,
-          mainAxisSpacing: 8,
-          crossAxisSpacing: 8,
-          childAspectRatio: 2.6,
-        ),
-        itemCount: entries.length,
-        itemBuilder: (context, index) {
-          final e = entries[index];
-          return _tile(e.key, e.value);
-        },
-      ),
-    );
-  }
+  
 
   Widget _allMetricsListPage() {
     final entries = <MapEntry<String, String>>[
@@ -940,7 +873,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       MapEntry('MAP', '${_data.mapKpa} kPa'),
       MapEntry('Baro', '${_data.baroKpa} kPa'),
       MapEntry('MAF', '${_data.mafGs} g/s'),
-      MapEntry('Voltage', _format1(_data.voltageV) + ' V'),
+      MapEntry('Voltage', '${_format1(_data.voltageV)} V'),
       MapEntry('Ambient', '${_data.ambientTempC} °C'),
       MapEntry('Lambda', _format2(_data.lambda)),
       MapEntry('Fuel System Status', '${_data.fuelSystemStatus}'),

@@ -276,7 +276,7 @@ class _ConnectScreenState extends State<ConnectScreen> with SingleTickerProvider
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: Colors.red.withOpacity(0.1),
+                color: Colors.red.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Text(_error!, style: const TextStyle(color: Colors.redAccent)),
@@ -353,7 +353,7 @@ class _ConnectScreenState extends State<ConnectScreen> with SingleTickerProvider
                     width: double.infinity,
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: Colors.red.withOpacity(0.1),
+                      color: Colors.red.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Text(_error!, style: const TextStyle(color: Colors.redAccent)),

@@ -64,7 +64,7 @@ class ObdClient {
   static List<String> _parseSupportedBitmap(String response, String basePid) {
     // Expected cleaned contains like: 41 20 AA BB CC DD
     final cleaned = response.replaceAll(RegExp(r"\s+"), '').toUpperCase();
-    final header = '41' + basePid.substring(2);
+    final header = '41${basePid.substring(2)}';
     final i = cleaned.indexOf(header);
     if (i < 0 || cleaned.length < i + 10) return const [];
     // Extract 4 bytes bitmap if available; some ECUs may return fewer — guard lengths
@@ -86,7 +86,7 @@ class ObdClient {
         final mask = 1 << (7 - bit); // MSB first
         if ((b & mask) != 0) {
           final pidNum = startIndex + (byteIndex * 8) + bit + 1; // +1 per spec
-          final pid = '01' + pidNum.toRadixString(16).toUpperCase().padLeft(2, '0');
+          final pid = '01${pidNum.toRadixString(16).toUpperCase().padLeft(2, '0')}';
           supported.add(pid);
         }
       }
@@ -118,7 +118,7 @@ class ObdClient {
     final cmd = '06${tid.toUpperCase()}';
     final r = await _sendAndRead(cmd);
     final cleaned = r.replaceAll(RegExp(r"\s+"), '').toUpperCase();
-    final key = '46' + tid.toUpperCase();
+    final key = '46${tid.toUpperCase()}';
     final i = cleaned.indexOf(key);
     if (i < 0 || cleaned.length < i + 14) return (0, 0, 0);
     int vA = int.parse(cleaned.substring(i + 4, i + 6), radix: 16);
@@ -657,7 +657,7 @@ class ObdClient {
 
   static int _parseTwoBytesFor(String response, String pid) {
     final cleaned = response.replaceAll(RegExp(r"\s+"), '');
-    final key = '41' + pid.substring(2).toUpperCase();
+    final key = '41${pid.substring(2).toUpperCase()}';
     final i = cleaned.indexOf(key);
     if (i >= 0 && cleaned.length >= i + 8) {
       final a = int.parse(cleaned.substring(i + 4, i + 6), radix: 16);
@@ -669,7 +669,7 @@ class ObdClient {
 
   static int _parseOneByteFor(String response, String pid) {
     final cleaned = response.replaceAll(RegExp(r"\s+"), '');
-    final key = '41' + pid.substring(2).toUpperCase();
+    final key = '41${pid.substring(2).toUpperCase()}';
     final i = cleaned.indexOf(key);
     if (i >= 0 && cleaned.length >= i + 6) {
       return int.parse(cleaned.substring(i + 4, i + 6), radix: 16);
@@ -714,7 +714,7 @@ class ObdClient {
   // Formula: % = A, A is the byte value directly (0-100)
   static int _parsePercentDirect(String response, String pid) {
     final cleaned = response.replaceAll(RegExp(r"\s+"), '');
-    final key = '41' + pid.substring(2).toUpperCase();
+    final key = '41${pid.substring(2).toUpperCase()}';
     final i = cleaned.indexOf(key);
     if (i >= 0 && cleaned.length >= i + 6) {
       final v = int.parse(cleaned.substring(i + 4, i + 6), radix: 16);

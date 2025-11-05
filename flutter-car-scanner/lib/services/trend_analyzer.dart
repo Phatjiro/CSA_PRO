@@ -1,4 +1,3 @@
-import '../models/battery_reading.dart';
 import '../services/battery_history_service.dart';
 import '../services/log_service.dart';
 

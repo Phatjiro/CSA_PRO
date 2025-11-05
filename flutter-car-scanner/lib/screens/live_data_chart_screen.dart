@@ -386,8 +386,12 @@ class _LiveDataChartScreenState extends State<LiveDataChartScreen> {
     for (final m in widget.selectedMetrics) {
       final series = _seriesForMetric(m);
       for (final p in series) {
-        minV = minV == null ? p.y : (p.y < minV! ? p.y : minV);
-        maxV = maxV == null ? p.y : (p.y > maxV! ? p.y : maxV);
+        if (minV == null || p.y < minV) {
+          minV = p.y;
+        }
+        if (maxV == null || p.y > maxV) {
+          maxV = p.y;
+        }
       }
     }
     if (minV == null || maxV == null) {
@@ -395,10 +399,10 @@ class _LiveDataChartScreenState extends State<LiveDataChartScreen> {
     }
     if (minV == maxV) {
       // expand a bit when flat line
-      return (minV! - 1, maxV! + 1);
+      return (minV - 1, maxV + 1);
     }
-    final padding = (maxV! - minV!) * 0.1; // 10% headroom
-    return (minV! - padding, maxV! + padding);
+    final padding = (maxV - minV) * 0.1; // 10% headroom
+    return (minV - padding, maxV + padding);
   }
 
   List<FlSpot> _seriesForMetric(LiveMetric m) {
@@ -545,7 +549,7 @@ class _LiveDataChartScreenState extends State<LiveDataChartScreen> {
           Container(
             width: double.infinity,
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            color: const Color(0xFF2E7D32).withOpacity(0.1),
+            color: const Color(0xFF2E7D32).withValues(alpha: 0.1),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -621,7 +625,6 @@ class _LiveDataChartScreenState extends State<LiveDataChartScreen> {
                 child: Row(
                   children: _getLineBars().asMap().entries.map((entry) {
                     final index = entry.key;
-                    final bar = entry.value;
                     final colors = [
                       Colors.red, Colors.blue, Colors.green, Colors.orange, Colors.purple,
                       Colors.teal, Colors.pink, Colors.indigo, Colors.amber, Colors.cyan,

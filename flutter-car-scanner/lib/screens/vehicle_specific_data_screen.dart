@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_car_scanner/services/connection_manager.dart';
-import 'package:flutter_car_scanner/services/obd_client.dart';
 
 class VehicleSpecificDataScreen extends StatefulWidget {
   const VehicleSpecificDataScreen({super.key});
@@ -27,7 +26,7 @@ class _VehicleSpecificDataScreenState extends State<VehicleSpecificDataScreen> {
       _supported = [];
     });
     try {
-      final client = ConnectionManager.instance.client as ObdClient?;
+      final client = ConnectionManager.instance.client;
       if (client == null) {
         setState(() {
           _error = 'Not connected. Please CONNECT first.';
@@ -102,9 +101,9 @@ class _VehicleSpecificDataScreenState extends State<VehicleSpecificDataScreen> {
         Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: Colors.blueAccent.withOpacity(0.15),
+            color: Colors.blueAccent.withValues(alpha: 0.15),
             borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: Colors.blueAccent.withOpacity(0.3)),
+            border: Border.all(color: Colors.blueAccent.withValues(alpha: 0.3)),
           ),
           child: Text(
             'Supported Extended PIDs: ${_supported.length}',
@@ -113,7 +112,7 @@ class _VehicleSpecificDataScreenState extends State<VehicleSpecificDataScreen> {
         ),
         const SizedBox(height: 12),
         ..._supported.map((pid) => Card(
-              color: Colors.white.withOpacity(0.08),
+              color: Colors.white.withValues(alpha: 0.08),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
               child: ListTile(
                 leading: const Icon(Icons.extension, color: Colors.cyanAccent),

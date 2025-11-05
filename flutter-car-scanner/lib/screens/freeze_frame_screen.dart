@@ -155,7 +155,7 @@ class _FreezeFrameScreenState extends State<FreezeFrameScreen> {
 
   Widget _metric(String title, int? value, {String? unit}) {
     return Card(
-      color: Colors.white.withOpacity(0.08),
+      color: Colors.white.withValues(alpha: 0.08),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: Padding(
         padding: const EdgeInsets.all(12),

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:hive_flutter/hive_flutter.dart';
 
 import '../models/vehicle.dart';
 import '../services/vehicle_service.dart';
@@ -86,7 +85,7 @@ class _VehiclePickerState extends State<VehiclePicker> {
 
               return ListTile(
                 leading: CircleAvatar(
-                  backgroundColor: isSelected ? Colors.blueAccent : Colors.white.withOpacity(0.1),
+                  backgroundColor: isSelected ? Colors.blueAccent : Colors.white.withValues(alpha: 0.1),
                   child: Icon(
                     isSelected ? Icons.check : Icons.directions_car,
                     color: isSelected ? Colors.white : Colors.white70,
@@ -135,9 +134,9 @@ class _VehiclePickerState extends State<VehiclePicker> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
         decoration: BoxDecoration(
-          border: Border.all(color: Colors.white.withOpacity(0.2)),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
           borderRadius: BorderRadius.circular(8),
-          color: Colors.white.withOpacity(0.05),
+          color: Colors.white.withValues(alpha: 0.05),
         ),
         child: Row(
           children: [

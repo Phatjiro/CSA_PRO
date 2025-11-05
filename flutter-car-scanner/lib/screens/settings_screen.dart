@@ -75,7 +75,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('$_appName', style: const TextStyle(fontWeight: FontWeight.bold)),
+            Text(_appName, style: const TextStyle(fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
             Text('Version: $_appVersion'),
             const SizedBox(height: 16),

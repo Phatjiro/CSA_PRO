@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_car_scanner/services/connection_manager.dart';
-import 'package:flutter_car_scanner/services/obd_client.dart';
 import 'package:flutter_car_scanner/services/battery_history_service.dart';
 
 class SecurityScanScreen extends StatefulWidget {
@@ -50,7 +49,7 @@ class _SecurityScanScreenState extends State<SecurityScanScreen> {
 
     // Fetch real diagnostics data (non-invasive)
     try {
-      final client = ConnectionManager.instance.client as ObdClient?;
+      final client = ConnectionManager.instance.client;
       if (client != null) {
         // Step 1: MIL & stored count
         final milAndCount = await client.readMilAndCount();
@@ -122,10 +121,10 @@ class _SecurityScanScreenState extends State<SecurityScanScreen> {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: Colors.orangeAccent.withOpacity(0.2),
+                color: Colors.orangeAccent.withValues(alpha: 0.2),
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
-                  color: Colors.orangeAccent.withOpacity(0.4),
+                  color: Colors.orangeAccent.withValues(alpha: 0.4),
                   width: 1,
                 ),
               ),
@@ -187,13 +186,13 @@ class _SecurityScanScreenState extends State<SecurityScanScreen> {
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                     colors: [
-                      const Color(0xFF9B59B6).withOpacity(0.3),
-                      Colors.blueAccent.withOpacity(0.2),
+                      const Color(0xFF9B59B6).withValues(alpha: 0.3),
+                      Colors.blueAccent.withValues(alpha: 0.2),
                     ],
                   ),
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(
-                    color: Colors.purpleAccent.withOpacity(0.3),
+                    color: Colors.purpleAccent.withValues(alpha: 0.3),
                     width: 1,
                   ),
                 ),
@@ -209,7 +208,7 @@ class _SecurityScanScreenState extends State<SecurityScanScreen> {
                           child: Container(
                             padding: const EdgeInsets.all(20),
                             decoration: BoxDecoration(
-                              color: Colors.purpleAccent.withOpacity(0.2),
+                              color: Colors.purpleAccent.withValues(alpha: 0.2),
                               shape: BoxShape.circle,
                             ),
                             child: const Icon(
@@ -245,7 +244,7 @@ class _SecurityScanScreenState extends State<SecurityScanScreen> {
                       child: LinearProgressIndicator(
                         value: _progress,
                         minHeight: 8,
-                        backgroundColor: Colors.white.withOpacity(0.1),
+                        backgroundColor: Colors.white.withValues(alpha: 0.1),
                         valueColor: AlwaysStoppedAnimation<Color>(Colors.purpleAccent),
                       ),
                     ),
@@ -254,7 +253,7 @@ class _SecurityScanScreenState extends State<SecurityScanScreen> {
                     Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.08),
+                        color: Colors.white.withValues(alpha: 0.08),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Row(
@@ -316,10 +315,10 @@ class _SecurityScanScreenState extends State<SecurityScanScreen> {
                               height: 32,
                               decoration: BoxDecoration(
                                 color: isCompleted
-                                    ? Colors.greenAccent.withOpacity(0.2)
+                                    ? Colors.greenAccent.withValues(alpha: 0.2)
                                     : isCurrent
-                                        ? step.color.withOpacity(0.2)
-                                        : Colors.white.withOpacity(0.05),
+                                        ? step.color.withValues(alpha: 0.2)
+                                        : Colors.white.withValues(alpha: 0.05),
                                 shape: BoxShape.circle,
                                 border: Border.all(
                                   color: isCompleted
@@ -381,13 +380,13 @@ class _SecurityScanScreenState extends State<SecurityScanScreen> {
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                     colors: [
-                      Colors.greenAccent.withOpacity(0.2),
-                      Colors.blueAccent.withOpacity(0.1),
+                      Colors.greenAccent.withValues(alpha: 0.2),
+                      Colors.blueAccent.withValues(alpha: 0.1),
                     ],
                   ),
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(
-                    color: Colors.greenAccent.withOpacity(0.3),
+                    color: Colors.greenAccent.withValues(alpha: 0.3),
                     width: 1,
                   ),
                 ),
@@ -426,7 +425,7 @@ class _SecurityScanScreenState extends State<SecurityScanScreen> {
                 title: 'OBD-II Port',
                 status: (_vin != null || _isConnected) ? 'Secure' : 'Info',
                 description: (_vin != null)
-                    ? 'VIN detected: '+_vin!+''
+                    ? 'VIN detected: ${_vin!}'
                     : 'Standard OBD-II connection detected. VIN may be available depending on vehicle.',
                 color: Colors.greenAccent,
               ),
@@ -436,7 +435,7 @@ class _SecurityScanScreenState extends State<SecurityScanScreen> {
                 title: 'ECU Communication',
                 status: (_milOn != null) ? 'Normal' : 'Info',
                 description: (_milOn != null)
-                    ? 'MIL: '+(_milOn! ? 'ON' : 'OFF')+' • Stored: '+(_dtcStoredCount ?? 0).toString()+', Pending: '+(_dtcPendingCount ?? 0).toString()+', Permanent: '+(_dtcPermanentCount ?? 0).toString()+''
+                    ? 'MIL: ${_milOn! ? 'ON' : 'OFF'} • Stored: ${_dtcStoredCount ?? 0}, Pending: ${_dtcPendingCount ?? 0}, Permanent: ${_dtcPermanentCount ?? 0}'
                     : 'Communication follows OBD-II standards. Detailed DTC info not available.',
                 color: Colors.greenAccent,
               ),
@@ -462,7 +461,7 @@ class _SecurityScanScreenState extends State<SecurityScanScreen> {
                 title: 'Data Transmission',
                 status: (_batteryAvgRecent != null) ? 'Normal' : 'Info',
                 description: (_batteryAvgRecent != null)
-                    ? 'Recent battery voltage avg: '+_batteryAvgRecent!.toStringAsFixed(1)+'V'+(_batteryOftenLow == true ? ' • Often low' : '')
+                    ? 'Recent battery voltage avg: ${_batteryAvgRecent!.toStringAsFixed(1)}V${_batteryOftenLow == true ? ' • Often low' : ''}'
                     : 'No battery history available yet. Drive and use the app to build history.',
                 color: Colors.greenAccent,
               ),
@@ -576,10 +575,10 @@ class _SecurityScanScreenState extends State<SecurityScanScreen> {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: Colors.redAccent.withOpacity(0.1),
+                color: Colors.redAccent.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
-                  color: Colors.redAccent.withOpacity(0.3),
+                  color: Colors.redAccent.withValues(alpha: 0.3),
                   width: 1,
                 ),
               ),
@@ -624,11 +623,11 @@ class _SecurityScanScreenState extends State<SecurityScanScreen> {
     required Color color,
   }) {
     return Card(
-      color: Colors.white.withOpacity(0.08),
+      color: Colors.white.withValues(alpha: 0.08),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
         side: BorderSide(
-          color: color.withOpacity(0.3),
+          color: color.withValues(alpha: 0.3),
           width: 1,
         ),
       ),
@@ -640,7 +639,7 @@ class _SecurityScanScreenState extends State<SecurityScanScreen> {
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: color.withOpacity(0.2),
+                color: color.withValues(alpha: 0.2),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Icon(icon, color: color, size: 24),
@@ -665,7 +664,7 @@ class _SecurityScanScreenState extends State<SecurityScanScreen> {
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                         decoration: BoxDecoration(
-                          color: color.withOpacity(0.2),
+                          color: color.withValues(alpha: 0.2),
                           borderRadius: BorderRadius.circular(4),
                         ),
                         child: Text(
@@ -713,7 +712,7 @@ class _SecurityScanScreenState extends State<SecurityScanScreen> {
     required List<String> tips,
   }) {
     return Card(
-      color: Colors.white.withOpacity(0.08),
+      color: Colors.white.withValues(alpha: 0.08),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
       ),
@@ -768,7 +767,7 @@ class _SecurityScanScreenState extends State<SecurityScanScreen> {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.05),
+        color: Colors.white.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Column(

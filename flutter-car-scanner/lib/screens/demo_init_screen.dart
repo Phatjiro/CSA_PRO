@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'dart:ui' as ui;
 
 import '../services/connection_manager.dart';
 import '../services/vehicle_service.dart';
@@ -74,14 +73,7 @@ class _DemoInitContentState extends State<_DemoInitContent> {
     final progress = _done ? 1.0 : _progress;
     const Color accent = Color(0xFFE91E63); // fixed accent
     const Color success = Color(0xFF2ECC71); // green
-    const List<Color> multi = <Color>[
-      Color(0xFF1E88E5), // blue
-      Color(0xFF2ECC71), // green
-      Color(0xFFF39C12), // yellow
-      Color(0xFFE91E63), // red-pink
-      Color(0xFF9B59B6), // purple
-      Color(0xFF1E88E5), // loop back
-    ];
+    // removed unused 'multi' colors (lint)
     return SafeArea(
       top: false,
       child: Padding(
@@ -93,7 +85,7 @@ class _DemoInitContentState extends State<_DemoInitContent> {
             border: Border.all(color: Colors.white24),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.35),
+                color: Colors.black.withValues(alpha: 0.35),
                 blurRadius: 24,
                 offset: const Offset(0, 12),
               ),
@@ -212,7 +204,7 @@ class _CarFillIcon extends StatelessWidget {
   final Color fillColor;
   final double size;
   final IconData icon;
-  const _CarFillIcon({super.key, required this.progress, required this.baseColor, required this.fillColor, this.size = 36, required this.icon});
+  const _CarFillIcon({required this.progress, required this.baseColor, required this.fillColor, this.size = 36, required this.icon});
 
   @override
   Widget build(BuildContext context) {

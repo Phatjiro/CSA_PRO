@@ -10,7 +10,6 @@ class IncidentHistoryScreen extends StatefulWidget {
 }
 
 class _IncidentHistoryScreenState extends State<IncidentHistoryScreen> {
-  bool _loading = false;
   bool _decodingVin = false;
   String? _error;
   Map<String, String>? _vinDecoded;
@@ -89,9 +88,9 @@ class _IncidentHistoryScreenState extends State<IncidentHistoryScreen> {
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: Colors.blue.withOpacity(0.1),
+              color: Colors.blue.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: Colors.blue.withOpacity(0.3)),
+              border: Border.all(color: Colors.blue.withValues(alpha: 0.3)),
             ),
             child: Row(
               children: [
@@ -100,7 +99,7 @@ class _IncidentHistoryScreenState extends State<IncidentHistoryScreen> {
                 Expanded(
                   child: Text(
                     'For detailed accident history, title records, and service history, please use Carfax or similar paid services.',
-                    style: TextStyle(fontSize: 12, color: Colors.white.withOpacity(0.9)),
+                    style: TextStyle(fontSize: 12, color: Colors.white.withValues(alpha: 0.9)),
                   ),
                 ),
               ],
@@ -140,16 +139,16 @@ class _IncidentHistoryScreenState extends State<IncidentHistoryScreen> {
               child: Center(
                 child: Column(
                   children: [
-                    Icon(Icons.info_outline, size: 48, color: Colors.white.withOpacity(0.5)),
+                    Icon(Icons.info_outline, size: 48, color: Colors.white.withValues(alpha: 0.5)),
                     const SizedBox(height: 8),
                     Text(
                       'No VIN available',
-                      style: TextStyle(color: Colors.white.withOpacity(0.7)),
+                      style: TextStyle(color: Colors.white.withValues(alpha: 0.7)),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       'Connect to vehicle to read VIN automatically',
-                      style: TextStyle(fontSize: 12, color: Colors.white.withOpacity(0.5)),
+                      style: TextStyle(fontSize: 12, color: Colors.white.withValues(alpha: 0.5)),
                       textAlign: TextAlign.center,
                     ),
                   ],
@@ -171,7 +170,7 @@ class _IncidentHistoryScreenState extends State<IncidentHistoryScreen> {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: Colors.red.withOpacity(0.1),
+                color: Colors.red.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Text(
@@ -246,16 +245,16 @@ class _IncidentHistoryScreenState extends State<IncidentHistoryScreen> {
       margin: const EdgeInsets.only(bottom: 4),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.05),
+        color: Colors.white.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.white.withOpacity(0.1)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(
             title,
-            style: TextStyle(color: Colors.white.withOpacity(0.7)),
+            style: TextStyle(color: Colors.white.withValues(alpha: 0.7)),
           ),
           Text(
             value,
@@ -274,7 +273,7 @@ class _IncidentHistoryScreenState extends State<IncidentHistoryScreen> {
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.05),
+        color: Colors.white.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Row(
@@ -298,7 +297,7 @@ class _IncidentHistoryScreenState extends State<IncidentHistoryScreen> {
                   description,
                   style: TextStyle(
                     fontSize: 12,
-                    color: Colors.white.withOpacity(0.6),
+                    color: Colors.white.withValues(alpha: 0.6),
                   ),
                 ),
               ],
