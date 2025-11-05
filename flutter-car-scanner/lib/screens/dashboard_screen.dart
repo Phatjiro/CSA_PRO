@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:syncfusion_flutter_gauges/gauges.dart';
 
@@ -31,6 +33,7 @@ class DashboardScreen extends StatefulWidget {
 class _DashboardScreenState extends State<DashboardScreen> {
   static const Duration _staleAfter = Duration(seconds: 2);
   final Map<Metric, DateTime> _lastUpdated = <Metric, DateTime>{};
+  StreamSubscription<ObdLiveData>? _dataSubscription;
   ObdLiveData _data = const ObdLiveData(
     engineRpm: 0,
     vehicleSpeedKmh: 0,
@@ -123,11 +126,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
   @override
   void initState() {
     super.initState();
-    widget.client.dataStream.listen((event) {
-      setState(() {
-        _data = event;
-        _markUpdatedFromEnabledPids();
-      });
+    _dataSubscription = widget.client.dataStream.listen((event) {
+      if (mounted) {
+        setState(() {
+          _data = event;
+          _markUpdatedFromEnabledPids();
+        });
+      }
     });
     // Ban đầu, chỉ bật các PIDs cho trang 1 (RPM, Speed, Coolant)
     _applyEnabledPidsForPage(0);
@@ -135,7 +140,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   @override
   void dispose() {
-    widget.client.disconnect();
+    // Chỉ cancel subscription của màn hình này, không disconnect client
+    // Client được quản lý bởi ConnectionManager và nên được giữ nguyên
+    _dataSubscription?.cancel();
     super.dispose();
   }
 
@@ -167,6 +174,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
           onPageChanged: (i) {
             _page.value = i;
             _applyEnabledPidsForPage(i);
+            // Trigger immediate poll để có data ngay khi chuyển page
+            widget.client.pollNow();
           },
           children: [
             _pageContent(page1, page1Layout),

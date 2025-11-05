@@ -30,36 +30,106 @@ class _VehicleInfoScreenState extends State<VehicleInfoScreen> {
         setState(() { _error = 'Not connected. Please CONNECT first.'; _loading = false; });
         return;
       }
-      // Try emulator REST first
-      try {
-        final url = Uri.parse('http://${client.host}:3000/api/config');
-        final res = await http.get(url).timeout(const Duration(seconds: 2));
-        if (res.statusCode == 200) {
-          final cfg = json.decode(res.body) as Map<String, dynamic>;
-          setState(() { _cfg = cfg; _loading = false; });
-          
-          // Auto-update VIN to current vehicle if connected
-          final vehicle = ConnectionManager.instance.vehicle;
-          final vin = cfg['vinCode'] as String?;
-          if (vehicle != null && vin != null && vin.isNotEmpty && vin != '-') {
-            await VehicleService.updateVin(vehicle.id, vin);
+      
+      // Detect connection type
+      final isLinkBased = client.host == 'link' && client.port == -1;
+      String connectionType = 'Unknown';
+      bool isDemo = false;
+      
+      if (isLinkBased) {
+        // Could be BLE or Demo - need to detect by testing ATI command
+        try {
+          final atiResponse = await client.requestPid('ATI');
+          // Demo typically returns just 'OK' or very short response
+          // Real ELM returns version string like "ELM327 v1.5" or similar
+          if (atiResponse.trim().toUpperCase() == 'OK' || 
+              atiResponse.trim().isEmpty ||
+              atiResponse.length < 5) {
+            isDemo = true;
+            connectionType = 'Demo Mode';
+          } else {
+            connectionType = 'BLE';
           }
-          return;
+        } catch (_) {
+          // If ATI fails, assume demo for safety
+          isDemo = true;
+          connectionType = 'Demo Mode';
         }
-      } catch (_) {}
+      } else {
+        // TCP connection - could be emulator or real device
+        connectionType = 'TCP (${client.host}:${client.port})';
+      }
+      
+      // Try emulator REST first (only for TCP connections)
+      if (!isLinkBased) {
+        try {
+          final url = Uri.parse('http://${client.host}:3000/api/config');
+          final res = await http.get(url).timeout(const Duration(seconds: 2));
+          if (res.statusCode == 200) {
+            final cfg = json.decode(res.body) as Map<String, dynamic>;
+            cfg['connectionType'] = connectionType;
+            setState(() { _cfg = cfg; _loading = false; });
+            
+            // Auto-update VIN to current vehicle if connected
+            final vehicle = ConnectionManager.instance.vehicle;
+            final vin = cfg['vinCode'] as String?;
+            if (vehicle != null && vin != null && vin.isNotEmpty && vin != '-') {
+              await VehicleService.updateVin(vehicle.id, vin);
+            }
+            return;
+          }
+        } catch (_) {}
+      }
 
-      // Fallback: read VIN via OBD Mode 09 for real ELM devices
+      // Fallback: read VIN via OBD Mode 09 for real ELM devices or demo
       final vin = await client.readVin();
+      final cfg = <String, dynamic>{
+        'vinCode': vin ?? '-',
+        'connectionType': connectionType,
+      };
+      
+      // Try to get ELM info for real devices
+      if (!isDemo) {
+        try {
+          // ATI - ELM327 version
+          final elmVersion = await client.requestPid('ATI');
+          if (elmVersion.isNotEmpty && 
+              !elmVersion.contains('NO DATA') && 
+              !elmVersion.contains('ERROR') &&
+              elmVersion.trim().toUpperCase() != 'OK') {
+            cfg['elmVersion'] = elmVersion.trim();
+            // Try to extract ELM name from version
+            if (elmVersion.toUpperCase().contains('ELM')) {
+              cfg['elmName'] = 'ELM327';
+            }
+          }
+          
+          // AT@1 - Device description (optional, not all devices support)
+          try {
+            final deviceDesc = await client.requestPid('AT@1');
+            if (deviceDesc.isNotEmpty && 
+                !deviceDesc.contains('NO DATA') && 
+                !deviceDesc.contains('ERROR') &&
+                deviceDesc.trim().toUpperCase() != 'OK') {
+              cfg['deviceId'] = deviceDesc.trim();
+            }
+          } catch (_) {}
+        } catch (_) {}
+      } else {
+        // Demo mode info
+        cfg['elmName'] = 'Demo ELM327';
+        cfg['elmVersion'] = 'Demo Mode';
+        cfg['deviceId'] = 'Demo';
+      }
+      
       setState(() {
-        _cfg = {
-          'vinCode': vin ?? '-'
-        };
+        _cfg = cfg;
         _loading = false;
       });
       
       // Auto-update VIN to current vehicle if connected
       final vehicle = ConnectionManager.instance.vehicle;
-      if (vehicle != null && vin != null && vin.isNotEmpty) {
+      if (vehicle != null && vin != null && vin.isNotEmpty && vin != '-') {
         await VehicleService.updateVin(vehicle.id, vin);
       }
     } catch (e) {
@@ -84,6 +154,9 @@ class _VehicleInfoScreenState extends State<VehicleInfoScreen> {
                   ? const Center(child: Text('No data'))
                   : ListView(
                       children: [
+                        if (_cfg!.containsKey('connectionType')) 
+                          _tile('Connection Type', _cfg!['connectionType']),
+                        const Divider(height: 1),
                         _tile('VIN', _cfg!['vinCode']),
                         if (_cfg!.containsKey('elmName')) _tile('ELM Name', _cfg!['elmName']),
                         if (_cfg!.containsKey('elmVersion')) _tile('ELM Version', _cfg!['elmVersion']),

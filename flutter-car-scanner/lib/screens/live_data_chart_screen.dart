@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter_car_scanner/models/obd_live_data.dart';
@@ -77,15 +79,25 @@ class _LiveDataChartScreenState extends State<LiveDataChartScreen> {
   final List<FlSpot> _longTermFuelTrim2 = [];
 
   int _tick = 0;
+  StreamSubscription<ObdLiveData>? _dataSubscription;
 
   @override
   void initState() {
     super.initState();
-    widget.client.dataStream.listen(_onData);
+    _dataSubscription = widget.client.dataStream.listen(_onData);
     _applyEnabledPidsForChart();
   }
 
+  @override
+  void dispose() {
+    // Cancel subscription để tránh memory leak
+    // Không disconnect client vì nó được quản lý bởi ConnectionManager
+    _dataSubscription?.cancel();
+    super.dispose();
+  }
+
   void _onData(ObdLiveData data) {
+    if (!mounted) return;
     setState(() {
       _tick++;
       final x = _tick.toDouble();

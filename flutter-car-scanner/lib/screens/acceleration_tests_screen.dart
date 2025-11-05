@@ -36,6 +36,7 @@ class _AccelerationTestsScreenState extends State<AccelerationTestsScreen> {
     super.initState();
     _client = ConnectionManager.instance.client!;
     _sub = _client.dataStream.listen((data) {
+      if (!mounted) return;
       final speed = data.vehicleSpeedKmh;
       _currentSpeed = speed;
       for (final t in _tests) {

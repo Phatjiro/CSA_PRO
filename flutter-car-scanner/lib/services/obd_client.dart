@@ -37,6 +37,11 @@ class ObdClient {
 
   Stream<ObdLiveData> get dataStream => _dataController.stream;
 
+  // Trigger immediate poll (useful when PIDs change)
+  Future<void> pollNow() async {
+    await _queryAndEmit();
+  }
+
   Future<String> requestPid(String pid) async {
     return _sendAndRead(pid);
   }
