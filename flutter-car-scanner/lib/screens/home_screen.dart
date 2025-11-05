@@ -17,12 +17,20 @@ import 'freeze_frame_screen.dart';
 import 'mil_status_screen.dart';
 import 'emission_check_screen.dart';
 import 'multi_vehicle_screen.dart';
+import 'incident_history_screen.dart';
+import 'ai_mechanic_screen.dart';
+import 'issue_forecast_screen.dart';
+import 'repair_cost_screen.dart';
+import 'security_scan_screen.dart';
+import 'service_tools_screen.dart';
+import 'vehicle_specific_data_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../services/vehicle_service.dart';
 import '../utils/prefs_keys.dart';
 import '../models/vehicle.dart';
 import 'package:flutter/foundation.dart';
 import 'demo_init_screen.dart';
+import 'settings_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -74,7 +82,11 @@ class _HomeScreenState extends State<HomeScreen> {
           IconButton(
             tooltip: 'Settings',
             icon: const Icon(Icons.settings),
-            onPressed: () {}, // placeholder
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const SettingsScreen()),
+              );
+            },
           ),
           IconButton(
             tooltip: _showAll ? 'Show groups' : 'Show all',
@@ -134,16 +146,16 @@ class _HomeScreenState extends State<HomeScreen> {
                       _MenuItem(Icons.analytics, 'Mode 6 Scan', _Action.openMode06),
                     ]),
                     _Group('Maintenance Service', const Color(0xFFF39C12), Icons.build_circle, [
-                      _MenuItem(Icons.build, 'Service Tools', _Action.placeholder),
+                      _MenuItem(Icons.build, 'Service Tools', _Action.openServiceTools),
                       _MenuItem(Icons.science, 'Emission Tools', _Action.openEmission),
                       _MenuItem(Icons.fact_check, 'Emission Check', _Action.openEmissionCheck),
                       _MenuItem(Icons.directions_car_filled, 'Vehicle Info', _Action.openVehicleInfo),
                     ]),
                     _Group('Smart Features', const Color(0xFF7D3C98), Icons.psychology, [
-                      _MenuItem(Icons.support_agent, 'AI Mechanic', _Action.placeholder),
-                      _MenuItem(Icons.attach_money, 'Repair Cost', _Action.placeholder),
-                      _MenuItem(Icons.waves, 'Issue Forecast', _Action.placeholder),
-                      _MenuItem(Icons.history, 'Incident History', _Action.placeholder),
+                      _MenuItem(Icons.support_agent, 'AI Mechanic', _Action.openAiMechanic),
+                      _MenuItem(Icons.attach_money, 'Repair Cost', _Action.openRepairCost),
+                      _MenuItem(Icons.waves, 'Issue Forecast', _Action.openIssueForecast),
+                      _MenuItem(Icons.history, 'Incident History', _Action.openIncidentHistory),
                     ]),
                     _Group('Smart Features+', const Color(0xFFE91E63), Icons.dashboard_customize, [
                       _MenuItem(Icons.speed, 'Custom Dashboard', _Action.openDashboard),
@@ -151,8 +163,8 @@ class _HomeScreenState extends State<HomeScreen> {
                       _MenuItem(Icons.sports_motorsports, 'Racing Mode', _Action.openAcceleration),
                     ]),
                     _Group('Specialized Features', const Color(0xFF9B59B6), Icons.security, [
-                      _MenuItem(Icons.shield, 'Security Scan', _Action.placeholder),
-                      _MenuItem(Icons.car_repair, 'Vehicle-Specific Data', _Action.placeholder),
+                      _MenuItem(Icons.shield, 'Security Scan', _Action.openSecurityScan),
+                      _MenuItem(Icons.car_repair, 'Vehicle-Specific Data', _Action.openVehicleSpecificData),
                       _MenuItem(Icons.bubble_chart, 'O2 Test', _Action.openO2Test),
                       _MenuItem(Icons.battery_full, 'Battery Detection', _Action.openBatteryDetection),
                     ]),
@@ -173,7 +185,7 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
               child: Row(
                 children: [
                   Expanded(
@@ -197,6 +209,33 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ],
               ),
+            ),
+            ValueListenableBuilder<bool>(
+              valueListenable: ConnectionManager.instance.isConnected,
+              builder: (context, connected, _) {
+                if (!connected) return const SizedBox.shrink();
+                return Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                  child: SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton(
+                      onPressed: () async {
+                        try {
+                          await ConnectionManager.instance.disconnect();
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Disconnected')),
+                          );
+                        } catch (_) {}
+                      },
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: Colors.redAccent,
+                        side: const BorderSide(color: Colors.redAccent),
+                      ),
+                      child: const Text('DISCONNECT'),
+                    ),
+                  ),
+                );
+              },
             ),
             Padding(
               padding: const EdgeInsets.only(bottom: 8),
@@ -293,7 +332,8 @@ class _MenuTile extends StatelessWidget {
   }
 }
 
-enum _Action { openDashboard, openLiveData, openAcceleration, openEmission, openEmissionCheck, openReadCodes, openFreezeFrame, openMilStatus, openMode06, openLogbook, openVehicleInfo, openO2Test, openBatteryDetection, openVehicleList, openMaintenance, openPlaceholder, placeholder }
+
+enum _Action { openDashboard, openLiveData, openAcceleration, openEmission, openEmissionCheck, openReadCodes, openFreezeFrame, openMilStatus, openMode06, openLogbook, openVehicleInfo, openO2Test, openBatteryDetection, openVehicleList, openMaintenance, openIncidentHistory, openAiMechanic, openIssueForecast, openRepairCost, openSecurityScan, openVehicleSpecificData, openServiceTools, openPlaceholder, placeholder }
 
 class _Section extends StatelessWidget {
   final String title;
@@ -415,8 +455,39 @@ class _Section extends StatelessWidget {
                         }
                         Navigator.of(context).push(MaterialPageRoute(builder: (_) => const Mode06Screen()));
                         break;
+                          case _Action.openServiceTools:
+                            Navigator.of(context).push(MaterialPageRoute(builder: (_) => const ServiceToolsScreen()));
+                            break;
                       case _Action.openLogbook:
                         Navigator.of(context).push(MaterialPageRoute(builder: (_) => const LogbookScreen()));
+                        break;
+                      case _Action.openIncidentHistory:
+                        Navigator.of(context).push(MaterialPageRoute(builder: (_) => const IncidentHistoryScreen()));
+                        break;
+                      case _Action.openAiMechanic:
+                        Navigator.of(context).push(MaterialPageRoute(builder: (_) => const AiMechanicScreen()));
+                        break;
+                      case _Action.openIssueForecast:
+                        Navigator.of(context).push(MaterialPageRoute(builder: (_) => const IssueForecastScreen()));
+                        break;
+                      case _Action.openServiceTools:
+                        Navigator.of(context).push(MaterialPageRoute(builder: (_) => const ServiceToolsScreen()));
+                        break;
+                      case _Action.openRepairCost:
+                        Navigator.of(context).push(MaterialPageRoute(builder: (_) => const RepairCostScreen()));
+                        break;
+                      case _Action.openSecurityScan:
+                        Navigator.of(context).push(MaterialPageRoute(builder: (_) => const SecurityScanScreen()));
+                        break;
+                      case _Action.openVehicleSpecificData:
+                        final clientV = ConnectionManager.instance.client;
+                        if (clientV == null) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Not connected. Please CONNECT first.')),
+                          );
+                          return;
+                        }
+                        Navigator.of(context).push(MaterialPageRoute(builder: (_) => const VehicleSpecificDataScreen()));
                         break;
                       case _Action.openVehicleInfo:
                         Navigator.of(context).push(MaterialPageRoute(builder: (_) => const VehicleInfoScreen()));
@@ -454,6 +525,21 @@ class _Section extends StatelessWidget {
                       case _Action.openLogbook:
                         Navigator.of(context).push(MaterialPageRoute(builder: (_) => const LogbookScreen()));
                         break;
+                      case _Action.openIncidentHistory:
+                        Navigator.of(context).push(MaterialPageRoute(builder: (_) => const IncidentHistoryScreen()));
+                        break;
+                      case _Action.openAiMechanic:
+                        Navigator.of(context).push(MaterialPageRoute(builder: (_) => const AiMechanicScreen()));
+                        break;
+                      case _Action.openIssueForecast:
+                        Navigator.of(context).push(MaterialPageRoute(builder: (_) => const IssueForecastScreen()));
+                        break;
+                      case _Action.openRepairCost:
+                        Navigator.of(context).push(MaterialPageRoute(builder: (_) => const RepairCostScreen()));
+                        break;
+                      case _Action.openSecurityScan:
+                        Navigator.of(context).push(MaterialPageRoute(builder: (_) => const SecurityScanScreen()));
+                        break;
                       case _Action.openReadCodes:
                         final clientR = ConnectionManager.instance.client;
                         if (clientR == null) {
@@ -486,6 +572,7 @@ class _Section extends StatelessWidget {
                         break;
                       case _Action.openPlaceholder:
                       case _Action.placeholder:
+                      default:
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(content: Text('Coming soon: ${it.title}')),
                         );
@@ -706,8 +793,34 @@ class _GroupCard extends StatelessWidget {
                             case _Action.openLogbook:
                               Navigator.of(context).push(MaterialPageRoute(builder: (_) => const LogbookScreen()));
                               break;
+                            case _Action.openIncidentHistory:
+                              Navigator.of(context).push(MaterialPageRoute(builder: (_) => const IncidentHistoryScreen()));
+                              break;
+                            case _Action.openAiMechanic:
+                              Navigator.of(context).push(MaterialPageRoute(builder: (_) => const AiMechanicScreen()));
+                              break;
+                            case _Action.openIssueForecast:
+                              Navigator.of(context).push(MaterialPageRoute(builder: (_) => const IssueForecastScreen()));
+                              break;
+                            case _Action.openRepairCost:
+                              Navigator.of(context).push(MaterialPageRoute(builder: (_) => const RepairCostScreen()));
+                              break;
+                            case _Action.openSecurityScan:
+                              Navigator.of(context).push(MaterialPageRoute(builder: (_) => const SecurityScanScreen()));
+                              break;
+                            case _Action.openVehicleSpecificData:
+                              final clientV3 = ConnectionManager.instance.client;
+                              if (clientV3 == null) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(content: Text('Not connected. Please CONNECT first.')),
+                                );
+                                return;
+                              }
+                              Navigator.of(context).push(MaterialPageRoute(builder: (_) => const VehicleSpecificDataScreen()));
+                              break;
                             case _Action.openPlaceholder:
                             case _Action.placeholder:
+                            default:
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(content: Text('Coming soon: ${it.title}')),
                               );
@@ -960,8 +1073,21 @@ void _openGroupChooser(BuildContext context, _Group g) {
                           case _Action.openMode06:
                             Navigator.of(context).push(MaterialPageRoute(builder: (_) => const Mode06Screen()));
                             break;
+                          case _Action.openVehicleSpecificData:
+                            final clientV = ConnectionManager.instance.client;
+                            if (clientV == null) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text('Not connected. Please CONNECT first.')),
+                              );
+                              return;
+                            }
+                            Navigator.of(context).push(MaterialPageRoute(builder: (_) => const VehicleSpecificDataScreen()));
+                            break;
                           case _Action.openMilStatus:
                             Navigator.of(context).push(MaterialPageRoute(builder: (_) => const MilStatusScreen()));
+                            break;
+                          case _Action.openServiceTools:
+                            Navigator.of(context).push(MaterialPageRoute(builder: (_) => const ServiceToolsScreen()));
                             break;
                           case _Action.openVehicleInfo:
                             Navigator.of(context).push(MaterialPageRoute(builder: (_) => const VehicleInfoScreen()));
@@ -996,11 +1122,37 @@ void _openGroupChooser(BuildContext context, _Group g) {
                             }
                             Navigator.of(context).push(MaterialPageRoute(builder: (_) => const BatteryDetectionScreen()));
                             break;
+                          case _Action.openVehicleSpecificData:
+                            final clientV2 = ConnectionManager.instance.client;
+                            if (clientV2 == null) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text('Not connected. Please CONNECT first.')),
+                              );
+                              return;
+                            }
+                            Navigator.of(context).push(MaterialPageRoute(builder: (_) => const VehicleSpecificDataScreen()));
+                            break;
                           case _Action.openLogbook:
                             Navigator.of(context).push(MaterialPageRoute(builder: (_) => const LogbookScreen()));
                             break;
+                          case _Action.openIncidentHistory:
+                            Navigator.of(context).push(MaterialPageRoute(builder: (_) => const IncidentHistoryScreen()));
+                            break;
+                          case _Action.openAiMechanic:
+                            Navigator.of(context).push(MaterialPageRoute(builder: (_) => const AiMechanicScreen()));
+                            break;
+                          case _Action.openIssueForecast:
+                            Navigator.of(context).push(MaterialPageRoute(builder: (_) => const IssueForecastScreen()));
+                            break;
+                          case _Action.openRepairCost:
+                            Navigator.of(context).push(MaterialPageRoute(builder: (_) => const RepairCostScreen()));
+                            break;
+                          case _Action.openSecurityScan:
+                            Navigator.of(context).push(MaterialPageRoute(builder: (_) => const SecurityScanScreen()));
+                            break;
                           case _Action.openPlaceholder:
                           case _Action.placeholder:
+                          default:
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(content: Text('Coming soon: ${it.title}')),
                             );

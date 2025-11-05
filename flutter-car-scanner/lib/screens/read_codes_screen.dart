@@ -3,6 +3,7 @@ import 'package:flutter_car_scanner/services/obd_client.dart';
 import 'package:flutter_car_scanner/services/connection_manager.dart';
 import 'package:flutter_car_scanner/services/log_service.dart';
 import 'package:flutter_car_scanner/utils/dtc_helper.dart';
+import 'package:flutter_car_scanner/data/repair_suggestions.dart';
 
 class ReadCodesScreen extends StatefulWidget {
   const ReadCodesScreen({super.key});
@@ -233,25 +234,38 @@ class _ReadCodesScreenState extends State<ReadCodesScreen> with SingleTickerProv
       padding: const EdgeInsets.symmetric(vertical: 8),
       itemBuilder: (context, index) {
         final dtcCode = codes[index];
-        final description = DtcHelper.getDescription(dtcCode);
-        final howToRead = DtcHelper.getHowToRead(dtcCode);
-        
-        return Card(
-          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-          color: Colors.white.withOpacity(0.08),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Material(
-            color: Colors.transparent,
-            child: InkWell(
-              onTap: () => DtcHelper.searchOnGoogle(dtcCode),
-              borderRadius: BorderRadius.circular(12),
-              splashColor: Colors.white.withOpacity(0.1),
-              highlightColor: Colors.white.withOpacity(0.05),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                child: Row(
+        return _buildDtcCard(dtcCode);
+      },
+    );
+  }
+
+  Widget _buildDtcCard(String dtcCode) {
+    final description = DtcHelper.getDescription(dtcCode);
+    final howToRead = DtcHelper.getHowToRead(dtcCode);
+    final suggestions = RepairSuggestions.getSuggestionList(dtcCode);
+    final costRange = RepairSuggestions.getCostRange(dtcCode);
+    final severity = RepairSuggestions.getSeverity(dtcCode);
+    final hasRepairData = RepairSuggestions.hasData(dtcCode);
+
+    return Card(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      color: Colors.white.withOpacity(0.08),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () => DtcHelper.searchOnGoogle(dtcCode),
+          borderRadius: BorderRadius.circular(12),
+          splashColor: Colors.white.withOpacity(0.1),
+          highlightColor: Colors.white.withOpacity(0.05),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const Icon(Icons.error_outline, color: Colors.redAccent, size: 28),
@@ -293,30 +307,143 @@ class _ReadCodesScreenState extends State<ReadCodesScreen> with SingleTickerProv
                               fontStyle: FontStyle.italic,
                             ),
                           ),
-                          const SizedBox(height: 6),
-                          Row(
-                            children: [
-                              Icon(Icons.info_outline, size: 14, color: Colors.white54),
-                              const SizedBox(width: 4),
-                              Text(
-                                'Tap to search on Google',
-                                style: TextStyle(
-                                  color: Colors.white54,
-                                  fontSize: 11,
-                                ),
-                              ),
-                            ],
-                          ),
                         ],
                       ),
                     ),
                   ],
                 ),
-              ),
+                // Repair Suggestions & Cost Estimate Section
+                if (hasRepairData) ...[
+                  const SizedBox(height: 12),
+                  const Divider(height: 1, color: Colors.white24),
+                  const SizedBox(height: 8),
+                  // Cost Estimate
+                  if (costRange != null) ...[
+                    Row(
+                      children: [
+                        Icon(Icons.attach_money, size: 16, color: Colors.orangeAccent),
+                        const SizedBox(width: 6),
+                        Text(
+                          'Est. Cost: $costRange',
+                          style: const TextStyle(
+                            color: Colors.orangeAccent,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        if (severity != null) ...[
+                          const SizedBox(width: 12),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: _getSeverityColor(severity).withOpacity(0.2),
+                              borderRadius: BorderRadius.circular(4),
+                              border: Border.all(
+                                color: _getSeverityColor(severity),
+                                width: 1,
+                              ),
+                            ),
+                            child: Text(
+                              severity,
+                              style: TextStyle(
+                                color: _getSeverityColor(severity),
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                  ],
+                  // Repair Suggestions
+                  if (suggestions != null && suggestions.isNotEmpty) ...[
+                    Row(
+                      children: [
+                        Icon(Icons.build, size: 16, color: Colors.blueAccent),
+                        const SizedBox(width: 6),
+                        const Text(
+                          'Repair Suggestions:',
+                          style: TextStyle(
+                            color: Colors.blueAccent,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    ...suggestions.take(3).map((suggestion) => Padding(
+                          padding: const EdgeInsets.only(left: 22, bottom: 4),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                '• ',
+                                style: TextStyle(color: Colors.white70, fontSize: 14),
+                              ),
+                              Expanded(
+                                child: Text(
+                                  suggestion,
+                                  style: const TextStyle(
+                                    color: Colors.white70,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        )),
+                    if (suggestions.length > 3) ...[
+                      const SizedBox(height: 4),
+                      Padding(
+                        padding: const EdgeInsets.only(left: 22),
+                        child: Text(
+                          '... and ${suggestions.length - 3} more suggestions',
+                          style: TextStyle(
+                            color: Colors.white54,
+                            fontSize: 11,
+                            fontStyle: FontStyle.italic,
+                          ),
+                        ),
+                      ),
+                    ],
+                    const SizedBox(height: 8),
+                  ],
+                ],
+                const SizedBox(height: 6),
+                Row(
+                  children: [
+                    Icon(Icons.info_outline, size: 14, color: Colors.white54),
+                    const SizedBox(width: 4),
+                    Text(
+                      'Tap to search on Google',
+                      style: TextStyle(
+                        color: Colors.white54,
+                        fontSize: 11,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             ),
           ),
-        );
-      },
+        ),
+      ),
     );
+  }
+
+  Color _getSeverityColor(String? severity) {
+    switch (severity?.toLowerCase()) {
+      case 'high':
+        return Colors.redAccent;
+      case 'medium':
+        return Colors.orangeAccent;
+      case 'low':
+        return Colors.greenAccent;
+      default:
+        return Colors.white54;
+    }
   }
 }

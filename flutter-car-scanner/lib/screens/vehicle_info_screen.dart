@@ -154,16 +154,18 @@ class _VehicleInfoScreenState extends State<VehicleInfoScreen> {
                   ? const Center(child: Text('No data'))
                   : ListView(
                       children: [
-                        if (_cfg!.containsKey('connectionType')) 
-                          _tile('Connection Type', _cfg!['connectionType']),
-                        const Divider(height: 1),
                         _tile('VIN', _cfg!['vinCode']),
-                        if (_cfg!.containsKey('elmName')) _tile('ELM Name', _cfg!['elmName']),
-                        if (_cfg!.containsKey('elmVersion')) _tile('ELM Version', _cfg!['elmVersion']),
-                        if (_cfg!.containsKey('deviceId')) _tile('Device ID', _cfg!['deviceId']),
+                        if (_cfg!.containsKey('elmVersion') && _cfg!['elmVersion'] != 'Demo Mode') ...[
+                          const Divider(height: 1),
+                          _tile('ELM Version', _cfg!['elmVersion']),
+                        ],
+                        if (_cfg!.containsKey('deviceId') && _cfg!['deviceId'] != 'Demo') 
+                          _tile('Device ID', _cfg!['deviceId']),
                         if (_cfg!.containsKey('ecuCount')) _tile('ECU Count', _cfg!['ecuCount']),
-                        if (_cfg!.containsKey('server')) const Divider(height: 1),
-                        if (_cfg!.containsKey('server')) _tile('Server', _cfg!['server']),
+                        if (_cfg!.containsKey('server')) ...[
+                          const Divider(height: 1),
+                          _tile('Server', _cfg!['server']),
+                        ],
                         if (_cfg!.containsKey('port')) _tile('TCP Port', _cfg!['port']),
                       ],
                     ),

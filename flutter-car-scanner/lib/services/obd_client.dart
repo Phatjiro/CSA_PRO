@@ -46,6 +46,54 @@ class ObdClient {
     return _sendAndRead(pid);
   }
 
+  // Extended PIDs support detection (quick win)
+  // Queries 0120, 0140, 0160 to detect support bitmaps and returns a list of supported PID hex codes
+  Future<List<String>> getExtendedSupportedPids() async {
+    final supported = <String>{};
+    for (final base in ['0120', '0140', '0160']) {
+      try {
+        final resp = await _sendAndRead(base);
+        final list = _parseSupportedBitmap(resp, base);
+        supported.addAll(list);
+      } catch (_) {}
+    }
+    return supported.toList()..sort();
+  }
+
+  // Parse Mode 01 support bitmap response for a given base (e.g., 0120 → header 41 20)
+  static List<String> _parseSupportedBitmap(String response, String basePid) {
+    // Expected cleaned contains like: 41 20 AA BB CC DD
+    final cleaned = response.replaceAll(RegExp(r"\s+"), '').toUpperCase();
+    final header = '41' + basePid.substring(2);
+    final i = cleaned.indexOf(header);
+    if (i < 0 || cleaned.length < i + 10) return const [];
+    // Extract 4 bytes bitmap if available; some ECUs may return fewer — guard lengths
+    final bytes = <int>[];
+    for (int off = i + 4; off + 2 <= cleaned.length && bytes.length < 4; off += 2) {
+      final part = cleaned.substring(off, off + 2);
+      final b = int.tryParse(part, radix: 16);
+      if (b == null) break;
+      bytes.add(b);
+    }
+    if (bytes.length < 4) return const [];
+
+    // basePid 0120 → range 0x21..0x40; 0140 → 0x41..0x60; 0160 → 0x61..0x80
+    final startIndex = int.parse(basePid.substring(2), radix: 16); // e.g., 0x20
+    final supported = <String>[];
+    for (int byteIndex = 0; byteIndex < 4; byteIndex++) {
+      final b = bytes[byteIndex];
+      for (int bit = 0; bit < 8; bit++) {
+        final mask = 1 << (7 - bit); // MSB first
+        if ((b & mask) != 0) {
+          final pidNum = startIndex + (byteIndex * 8) + bit + 1; // +1 per spec
+          final pid = '01' + pidNum.toRadixString(16).toUpperCase().padLeft(2, '0');
+          supported.add(pid);
+        }
+      }
+    }
+    return supported;
+  }
+
   // Mode 06 helpers
   Future<List<String>> readMode06Supported() async {
     final r = await _sendAndRead('0600');
