@@ -141,14 +141,14 @@ class _BatteryDetectionScreenState extends State<BatteryDetectionScreen>
             children: [
               Chip(
                 label: Text(_health(_voltage!)),
-                backgroundColor: _healthColor(_voltage!).withOpacity(0.2),
+                backgroundColor: _healthColor(_voltage!).withValues(alpha: 0.2),
                 labelStyle: TextStyle(color: _healthColor(_voltage!)),
               ),
               const SizedBox(width: 8),
               if (_engineRpm != null)
                 Chip(
                   label: Text(_chargingStatusText()),
-                  backgroundColor: _chargingStatusColor().withOpacity(0.2),
+                  backgroundColor: _chargingStatusColor().withValues(alpha: 0.2),
                   labelStyle: TextStyle(color: _chargingStatusColor()),
                 ),
             ],
@@ -213,7 +213,7 @@ class _BatteryDetectionScreenState extends State<BatteryDetectionScreen>
             children: [
               // Stats
               Card(
-                color: Colors.white.withOpacity(0.05),
+                color: Colors.white.withValues(alpha: 0.05),
                 child: Padding(
                   padding: const EdgeInsets.all(12),
                   child: Row(
@@ -237,7 +237,7 @@ class _BatteryDetectionScreenState extends State<BatteryDetectionScreen>
                       horizontalInterval: 0.5,
                       getDrawingHorizontalLine: (value) {
                         return FlLine(
-                          color: Colors.white.withOpacity(0.1),
+                          color: Colors.white.withValues(alpha: 0.1),
                           strokeWidth: 1,
                         );
                       },
@@ -280,7 +280,7 @@ class _BatteryDetectionScreenState extends State<BatteryDetectionScreen>
                     ),
                     borderData: FlBorderData(
                       show: true,
-                      border: Border.all(color: Colors.white.withOpacity(0.2)),
+                      border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
                     ),
                     minX: 0,
                     maxX: (readings.length - 1).toDouble(),
@@ -295,7 +295,7 @@ class _BatteryDetectionScreenState extends State<BatteryDetectionScreen>
                         dotData: const FlDotData(show: false),
                         belowBarData: BarAreaData(
                           show: true,
-                          color: Colors.purpleAccent.withOpacity(0.1),
+                          color: Colors.purpleAccent.withValues(alpha: 0.1),
                         ),
                       ),
                     ],

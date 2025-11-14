@@ -160,7 +160,7 @@ class _MaintenanceListScreenState extends State<MaintenanceListScreen> {
           if (_vehicles.length > 1)
             Container(
               padding: const EdgeInsets.all(12),
-              color: Colors.white.withOpacity(0.05),
+              color: Colors.white.withValues(alpha: 0.05),
               child: DropdownButton<Vehicle>(
                 value: _selectedVehicle,
                 isExpanded: true,
@@ -197,14 +197,14 @@ class _MaintenanceListScreenState extends State<MaintenanceListScreen> {
                         Icon(
                           Icons.build_circle_outlined,
                           size: 64,
-                          color: Colors.white.withOpacity(0.5),
+                          color: Colors.white.withValues(alpha: 0.5),
                         ),
                         const SizedBox(height: 16),
                         Text(
                           'No maintenance items',
                           style: TextStyle(
                             fontSize: 18,
-                            color: Colors.white.withOpacity(0.7),
+                            color: Colors.white.withValues(alpha: 0.7),
                           ),
                         ),
                         const SizedBox(height: 8),
@@ -286,8 +286,8 @@ class _MaintenanceListScreenState extends State<MaintenanceListScreen> {
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
       color: isOverdue
-          ? Colors.redAccent.withOpacity(0.1)
-          : Colors.white.withOpacity(0.05),
+          ? Colors.redAccent.withValues(alpha: 0.1)
+          : Colors.white.withValues(alpha: 0.05),
       child: ListTile(
         leading: CircleAvatar(
           backgroundColor: isOverdue

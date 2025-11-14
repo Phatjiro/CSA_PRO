@@ -8,6 +8,7 @@ import '../services/vehicle_service.dart';
 import '../services/ble_obd_link.dart';
 import '../utils/prefs_keys.dart';
 import '../widgets/vehicle_picker.dart';
+import 'scan_dialog.dart';
 
 class ConnectScreen extends StatefulWidget {
   const ConnectScreen({super.key});
@@ -33,6 +34,8 @@ class _ConnectScreenState extends State<ConnectScreen> with SingleTickerProvider
   
   // Common fields
   bool _connecting = false;
+  bool _isConnected = false;
+  bool _isScanning = false;
   String? _error;
   Vehicle? _selectedVehicle;
 
@@ -147,19 +150,38 @@ class _ConnectScreenState extends State<ConnectScreen> with SingleTickerProvider
       await prefs.setString(PrefsKeys.currentVehicleId, _selectedVehicle!.id);
       
       if (!mounted) return;
-      Navigator.of(context).pop();
+      setState(() {
+        _connecting = false;
+        _isConnected = true;
+      });
     } catch (e) {
       if (mounted) {
         setState(() {
           _error = e.toString();
-        });
-      }
-    } finally {
-      if (mounted) {
-        setState(() {
           _connecting = false;
         });
       }
+    }
+  }
+  
+  Future<void> _startScan() async {
+    setState(() {
+      _isScanning = true;
+      _error = null;
+    });
+    
+    // Show scan dialog (similar to demo_init_screen)
+    final scanResult = await showScanDialog(context);
+    
+    if (!mounted) return;
+    
+    setState(() {
+      _isScanning = false;
+    });
+    
+    // If scan completed successfully, close connect screen
+    if (scanResult == true) {
+      Navigator.of(context).pop();
     }
   }
 
@@ -189,16 +211,14 @@ class _ConnectScreenState extends State<ConnectScreen> with SingleTickerProvider
       await prefs.setString(PrefsKeys.currentVehicleId, _selectedVehicle!.id);
       
       if (!mounted) return;
-      Navigator.of(context).pop();
+      setState(() {
+        _connecting = false;
+        _isConnected = true;
+      });
     } catch (e) {
       if (mounted) {
         setState(() {
           _error = e.toString();
-        });
-      }
-    } finally {
-      if (mounted) {
-        setState(() {
           _connecting = false;
         });
       }
@@ -238,37 +258,101 @@ class _ConnectScreenState extends State<ConnectScreen> with SingleTickerProvider
             'Connect via Wi‑Fi (TCP ELM327)',
             style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
           ),
-          const SizedBox(height: 16),
-          VehiclePicker(
-            selectedVehicle: _selectedVehicle,
-            onVehicleSelected: (vehicle) {
-              setState(() => _selectedVehicle = vehicle);
-            },
-          ),
+          if (!_isConnected) ...[
+            const SizedBox(height: 16),
+            VehiclePicker(
+              selectedVehicle: _selectedVehicle,
+              onVehicleSelected: (vehicle) {
+                setState(() => _selectedVehicle = vehicle);
+              },
+            ),
+          ],
           const SizedBox(height: 16),
           TextField(
             controller: _hostController,
             decoration: const InputDecoration(labelText: 'Host (IP)'),
             keyboardType: TextInputType.number,
+            enabled: !_isConnected,
           ),
           const SizedBox(height: 8),
           TextField(
             controller: _portController,
             decoration: const InputDecoration(labelText: 'Port'),
             keyboardType: TextInputType.number,
+            enabled: !_isConnected,
           ),
+          if (_isConnected) ...[
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: const Color(0xFF2ECC71).withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: const Color(0xFF2ECC71).withValues(alpha: 0.3),
+                  width: 1,
+                ),
+              ),
+              child: const Row(
+                children: [
+                  Icon(Icons.check_circle, color: Color(0xFF2ECC71), size: 20),
+                  SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Connected! Tap SCAN to load vehicle data.',
+                      style: TextStyle(
+                        color: Color(0xFF2ECC71),
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
           const SizedBox(height: 16),
           SizedBox(
             width: double.infinity,
             child: ElevatedButton(
-              onPressed: (_connecting || _selectedVehicle == null) ? null : _connectTcp,
+              onPressed: (_connecting || _isScanning || _selectedVehicle == null) 
+                  ? null 
+                  : (_isConnected ? _startScan : _connectTcp),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: _isConnected 
+                    ? const Color(0xFF2ECC71) 
+                    : Theme.of(context).primaryColor,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 16),
+              ),
               child: _connecting
                   ? const SizedBox(
                       height: 20,
                       width: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2),
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                      ),
                     )
-                  : const Text('CONNECT'),
+                  : _isScanning
+                      ? const Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                              ),
+                            ),
+                            SizedBox(width: 12),
+                            Text('SCANNING...', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+                          ],
+                        )
+                      : Text(
+                          _isConnected ? 'SCAN' : 'CONNECT',
+                          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                        ),
             ),
           ),
           if (_error != null) ...[
@@ -276,7 +360,7 @@ class _ConnectScreenState extends State<ConnectScreen> with SingleTickerProvider
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: Colors.red.withOpacity(0.1),
+                color: Colors.red.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Text(_error!, style: const TextStyle(color: Colors.redAccent)),
@@ -297,13 +381,15 @@ class _ConnectScreenState extends State<ConnectScreen> with SingleTickerProvider
             'Connect via Bluetooth (BLE ELM327)',
             style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
           ),
-          const SizedBox(height: 16),
-          VehiclePicker(
-            selectedVehicle: _selectedVehicle,
-            onVehicleSelected: (vehicle) {
-              setState(() => _selectedVehicle = vehicle);
-            },
-          ),
+          if (!_isConnected) ...[
+            const SizedBox(height: 16),
+            VehiclePicker(
+              selectedVehicle: _selectedVehicle,
+              onVehicleSelected: (vehicle) {
+                setState(() => _selectedVehicle = vehicle);
+              },
+            ),
+          ],
           const SizedBox(height: 16),
           Row(
             children: [
@@ -326,6 +412,35 @@ class _ConnectScreenState extends State<ConnectScreen> with SingleTickerProvider
           Expanded(
             child: _buildBleList(),
           ),
+          if (_isConnected) ...[
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: const Color(0xFF2ECC71).withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: const Color(0xFF2ECC71).withValues(alpha: 0.3),
+                  width: 1,
+                ),
+              ),
+              child: const Row(
+                children: [
+                  Icon(Icons.check_circle, color: Color(0xFF2ECC71), size: 20),
+                  SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Connected! Tap SCAN to load vehicle data.',
+                      style: TextStyle(
+                        color: Color(0xFF2ECC71),
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
           SafeArea(
             top: false,
             minimum: const EdgeInsets.only(bottom: 16),
@@ -335,16 +450,45 @@ class _ConnectScreenState extends State<ConnectScreen> with SingleTickerProvider
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
-                    onPressed: (_connecting || _selectedVehicle == null || _selectedBleDevice == null)
+                    onPressed: (_connecting || _isScanning || _selectedVehicle == null || _selectedBleDevice == null)
                         ? null
-                        : _connectBle,
+                        : (_isConnected ? _startScan : _connectBle),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: _isConnected 
+                          ? const Color(0xFF2ECC71) 
+                          : Theme.of(context).primaryColor,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                    ),
                     child: _connecting
                         ? const SizedBox(
                             height: 20,
                             width: 20,
-                            child: CircularProgressIndicator(strokeWidth: 2),
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                            ),
                           )
-                        : const Text('CONNECT'),
+                        : _isScanning
+                            ? const Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  SizedBox(
+                                    width: 20,
+                                    height: 20,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                    ),
+                                  ),
+                                  SizedBox(width: 12),
+                                  Text('SCANNING...', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+                                ],
+                              )
+                            : Text(
+                                _isConnected ? 'SCAN' : 'CONNECT',
+                                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                              ),
                   ),
                 ),
                 if (_error != null) ...[
@@ -353,7 +497,7 @@ class _ConnectScreenState extends State<ConnectScreen> with SingleTickerProvider
                     width: double.infinity,
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: Colors.red.withOpacity(0.1),
+                      color: Colors.red.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Text(_error!, style: const TextStyle(color: Colors.redAccent)),

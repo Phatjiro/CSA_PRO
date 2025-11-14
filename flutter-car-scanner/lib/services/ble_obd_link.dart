@@ -40,32 +40,66 @@ class BleObdLink implements ObdLink {
       );
       
       final services = await _device!.discoverServices();
-      BluetoothService targetService;
-      // Try to find UART service by UUID first; otherwise pick any with characteristics, else first
-      try {
-        targetService = services.firstWhere((s) => s.uuid == serviceUuid);
-      } catch (_) {
-        targetService = services.firstWhere(
-          (s) => s.characteristics.isNotEmpty,
-          orElse: () => services.first,
-        );
+      if (services.isEmpty) {
+        throw StateError('BLE: No GATT services found on device');
+      }
+
+      // Pick target service:
+      // 1) Exact UUID match if present
+      // 2) Any service that has both a writable and a notifiable characteristic
+      // 3) Any service that has at least one characteristic
+      // If nothing matches, fail with a clear error
+      BluetoothService? targetService = services.where((s) => s.uuid == serviceUuid).cast<BluetoothService?>().firstWhere(
+            (s) => s != null,
+            orElse: () => null,
+          );
+      if (targetService == null) {
+        BluetoothService? serviceWithWriteNotify;
+        for (final s in services) {
+          final hasWritable = s.characteristics.any((c) => c.properties.write || c.properties.writeWithoutResponse);
+          final hasNotify = s.characteristics.any((c) => c.properties.notify);
+          if (hasWritable && hasNotify) {
+            serviceWithWriteNotify = s;
+            break;
+          }
+        }
+        targetService = serviceWithWriteNotify;
+      }
+      targetService ??= services.firstWhere(
+        (s) => s.characteristics.isNotEmpty,
+        orElse: () => services.first,
+      );
+      if (targetService.characteristics.isEmpty) {
+        throw StateError('BLE: Target GATT service has no characteristics');
       }
 
       // Find TX characteristic (write)
-      _tx = targetService.characteristics.firstWhere(
-        (c) => c.uuid == txUuid || (c.properties.write || c.properties.writeWithoutResponse),
-        orElse: () => targetService.characteristics.firstWhere(
-          (c) => c.properties.write || c.properties.writeWithoutResponse,
-        ),
-      );
+      BluetoothCharacteristic? tx;
+      for (final c in targetService.characteristics) {
+        if (c.uuid == txUuid || c.properties.write || c.properties.writeWithoutResponse) {
+          tx = c;
+          // Prefer exact UUID match; otherwise take the first writable
+          if (c.uuid == txUuid) break;
+        }
+      }
+      if (tx == null) {
+        throw StateError('BLE: No writable TX characteristic found');
+      }
+      _tx = tx;
 
       // Find RX characteristic (notify)
-      _rx = targetService.characteristics.firstWhere(
-        (c) => c.uuid == rxUuid || c.properties.notify,
-        orElse: () => targetService.characteristics.firstWhere(
-          (c) => c.properties.notify,
-        ),
-      );
+      BluetoothCharacteristic? rx;
+      for (final c in targetService.characteristics) {
+        if (c.uuid == rxUuid || c.properties.notify) {
+          rx = c;
+          // Prefer exact UUID match; otherwise take the first notifiable
+          if (c.uuid == rxUuid) break;
+        }
+      }
+      if (rx == null) {
+        throw StateError('BLE: No notifiable RX characteristic found');
+      }
+      _rx = rx;
 
       // Enable notifications
       await _rx!.setNotifyValue(true);

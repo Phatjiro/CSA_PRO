@@ -56,6 +56,34 @@ class ObdLiveData {
   final int longTermFuelTrim1;
   final int shortTermFuelTrim2;
   final int longTermFuelTrim2;
+  
+  // O2 Sensor Voltages (Mode 01 PIDs 0114-011B)
+  final double o2SensorVoltage1; // Bank 1 Sensor 1
+  final double o2SensorVoltage2; // Bank 1 Sensor 2
+  final double o2SensorVoltage3; // Bank 1 Sensor 3
+  final double o2SensorVoltage4; // Bank 1 Sensor 4
+  final double o2SensorVoltage5; // Bank 2 Sensor 1
+  final double o2SensorVoltage6; // Bank 2 Sensor 2
+  final double o2SensorVoltage7; // Bank 2 Sensor 3
+  final double o2SensorVoltage8; // Bank 2 Sensor 4
+  
+  // Additional Mode 01 PIDs
+  final int engineOilTempC; // PID 015D
+  final double engineFuelRate; // PID 015F (L/h)
+  final int driverDemandTorque; // PID 0161 (%)
+  final int actualTorque; // PID 0162 (%)
+  final int referenceTorque; // PID 0163 (Nm)
+  
+  // Calculated Values (không có PID riêng)
+  final double fuelEconomyL100km; // Fuel economy (L/100km)
+  final double enginePowerKw; // Engine power (kW)
+  final double enginePowerHp; // Engine power (HP)
+  final double acceleration; // Acceleration (m/s²)
+  final double averageSpeed; // Average speed (km/h)
+  final double distanceTraveled; // Distance traveled (km)
+  final int tripTime; // Trip time (seconds)
+  final double airFuelRatio; // Air/Fuel ratio (AFR)
+  final double volumetricEfficiency; // Volumetric efficiency (%)
 
   const ObdLiveData({
     required this.engineRpm,
@@ -113,6 +141,28 @@ class ObdLiveData {
     required this.longTermFuelTrim1,
     required this.shortTermFuelTrim2,
     required this.longTermFuelTrim2,
+    required this.o2SensorVoltage1,
+    required this.o2SensorVoltage2,
+    required this.o2SensorVoltage3,
+    required this.o2SensorVoltage4,
+    required this.o2SensorVoltage5,
+    required this.o2SensorVoltage6,
+    required this.o2SensorVoltage7,
+    required this.o2SensorVoltage8,
+    required this.engineOilTempC,
+    required this.engineFuelRate,
+    required this.driverDemandTorque,
+    required this.actualTorque,
+    required this.referenceTorque,
+    this.fuelEconomyL100km = 0.0,
+    this.enginePowerKw = 0.0,
+    this.enginePowerHp = 0.0,
+    this.acceleration = 0.0,
+    this.averageSpeed = 0.0,
+    this.distanceTraveled = 0.0,
+    this.tripTime = 0,
+    this.airFuelRatio = 14.7,
+    this.volumetricEfficiency = 0.0,
   });
 }
 

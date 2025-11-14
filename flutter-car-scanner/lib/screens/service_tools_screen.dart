@@ -89,7 +89,7 @@ class _ServiceToolsScreenState extends State<ServiceToolsScreen> {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.06),
+        color: Colors.white.withValues(alpha: 0.06),
         borderRadius: BorderRadius.circular(12),
       ),
       child: const Text(
@@ -103,7 +103,7 @@ class _ServiceToolsScreenState extends State<ServiceToolsScreen> {
     return Column(
       children: [
         Card(
-          color: Colors.white.withOpacity(0.08),
+          color: Colors.white.withValues(alpha: 0.08),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           child: ListTile(
             leading: const Icon(Icons.fact_check, color: Colors.greenAccent),
@@ -115,7 +115,7 @@ class _ServiceToolsScreenState extends State<ServiceToolsScreen> {
         ),
         const SizedBox(height: 8),
         Card(
-          color: Colors.white.withOpacity(0.08),
+          color: Colors.white.withValues(alpha: 0.08),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           child: ListTile(
             leading: const Icon(Icons.delete_sweep, color: Colors.orangeAccent),
@@ -183,8 +183,8 @@ class _ServiceToolsScreenState extends State<ServiceToolsScreen> {
 
   Widget _guideCard({required String title, required List<String> bullets, required Color color}) {
     return Card(
-      color: Colors.white.withOpacity(0.06),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: BorderSide(color: color.withOpacity(0.3))),
+      color: Colors.white.withValues(alpha: 0.06),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: BorderSide(color: color.withValues(alpha: 0.3))),
       child: Padding(
         padding: const EdgeInsets.all(12),
         child: Column(

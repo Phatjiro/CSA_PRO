@@ -90,6 +90,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
     longTermFuelTrim1: 0,
     shortTermFuelTrim2: 0,
     longTermFuelTrim2: 0,
+    o2SensorVoltage1: 0.0,
+    o2SensorVoltage2: 0.0,
+    o2SensorVoltage3: 0.0,
+    o2SensorVoltage4: 0.0,
+    o2SensorVoltage5: 0.0,
+    o2SensorVoltage6: 0.0,
+    o2SensorVoltage7: 0.0,
+    o2SensorVoltage8: 0.0,
+    engineOilTempC: 0,
+    engineFuelRate: 0.0,
+    driverDemandTorque: 0,
+    actualTorque: 0,
+    referenceTorque: 0,
   );
 
   final ValueNotifier<int> _page = ValueNotifier<int>(0);
@@ -159,13 +172,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
             icon: const Icon(Icons.tune),
             tooltip: 'Configure',
           ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12),
-            child: Center(
-              child: Text(widget.client.isConnected ? 'Connected' : 'Disconnected',
-                  style: TextStyle(color: widget.client.isConnected ? Colors.greenAccent : Colors.redAccent)),
-            ),
-          )
         ],
       ),
       body: SafeArea(
@@ -345,7 +351,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return Container(
       margin: const EdgeInsets.all(8),
       decoration: BoxDecoration(
-        color: const Color(0xFF0D47A1).withOpacity(0.08),
+        color: const Color(0xFF0D47A1).withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(12),
       ),
       padding: const EdgeInsets.all(16),
@@ -590,17 +596,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   void _applyEnabledPidsForPage(int pageIndex) {
-    // Luôn đảm bảo các PID của Page 1 (RPM, Speed, Coolant)
-    final required = <Metric>{Metric.rpm, Metric.speed, Metric.coolant};
-    if (pageIndex == 1) {
-      required.addAll(page2);
-    } else if (pageIndex == 2) {
-      required.addAll(page3);
-    } else if (pageIndex == 3) {
-      // Trang 4: bật tất cả metrics để test nhanh
-      required.addAll(Metric.values);
-    }
-    final pids = _metricsToPids(required.toList());
+    // Enable ALL PIDs for Dashboard - serial polling với mutex đảm bảo ổn định
+    final pids = _metricsToPids(Metric.values);
+    // Debug: Uncomment to verify PIDs
+    // print('🎯 Dashboard calling setEnabledPids with ${pids.length} PIDs');
+    // print('🎯 PIDs include 010D? ${pids.contains('010D')}, 0105? ${pids.contains('0105')}');
     widget.client.setEnabledPids(pids);
   }
 

@@ -209,7 +209,7 @@ class _EmissionCheckScreenState extends State<EmissionCheckScreen> with SingleTi
       children: [
         // Status Card
         Card(
-          color: Colors.white.withOpacity(0.05),
+          color: Colors.white.withValues(alpha: 0.05),
           child: Padding(
             padding: const EdgeInsets.all(16),
             child: Column(
@@ -253,7 +253,7 @@ class _EmissionCheckScreenState extends State<EmissionCheckScreen> with SingleTi
         
         // Readiness Progress
         Card(
-          color: Colors.white.withOpacity(0.05),
+          color: Colors.white.withValues(alpha: 0.05),
           child: Padding(
             padding: const EdgeInsets.all(16),
             child: Column(
@@ -279,7 +279,7 @@ class _EmissionCheckScreenState extends State<EmissionCheckScreen> with SingleTi
                 const SizedBox(height: 8),
                 LinearProgressIndicator(
                   value: totalCount > 0 ? completedCount / totalCount : 0,
-                  backgroundColor: Colors.white.withOpacity(0.1),
+                  backgroundColor: Colors.white.withValues(alpha: 0.1),
                   valueColor: AlwaysStoppedAnimation<Color>(
                     readinessPercent >= 80 ? Colors.greenAccent : Colors.orangeAccent,
                   ),
@@ -297,7 +297,7 @@ class _EmissionCheckScreenState extends State<EmissionCheckScreen> with SingleTi
         
         // Drive Cycle Status
         Card(
-          color: Colors.white.withOpacity(0.05),
+          color: Colors.white.withValues(alpha: 0.05),
           child: Padding(
             padding: const EdgeInsets.all(16),
             child: Column(
@@ -340,7 +340,7 @@ class _EmissionCheckScreenState extends State<EmissionCheckScreen> with SingleTi
         // Emission DTCs
         if (_emissionDtcs.isNotEmpty)
           Card(
-            color: Colors.redAccent.withOpacity(0.1),
+            color: Colors.redAccent.withValues(alpha: 0.1),
             child: Padding(
               padding: const EdgeInsets.all(16),
               child: Column(
@@ -412,7 +412,7 @@ class _EmissionCheckScreenState extends State<EmissionCheckScreen> with SingleTi
         final key = _readinessItems.keys.elementAt(index);
         final (available, completed) = _readinessItems[key]!;
         return Card(
-          color: Colors.white.withOpacity(0.05),
+          color: Colors.white.withValues(alpha: 0.05),
           child: ListTile(
             leading: Icon(
               completed ? Icons.check_circle : Icons.error_outline,
@@ -426,8 +426,8 @@ class _EmissionCheckScreenState extends State<EmissionCheckScreen> with SingleTi
             trailing: Chip(
               label: Text(completed ? 'Done' : 'Pending'),
               backgroundColor: completed
-                  ? Colors.greenAccent.withOpacity(0.2)
-                  : Colors.orangeAccent.withOpacity(0.2),
+                  ? Colors.greenAccent.withValues(alpha: 0.2)
+                  : Colors.orangeAccent.withValues(alpha: 0.2),
               labelStyle: TextStyle(
                 color: completed ? Colors.greenAccent : Colors.orangeAccent,
                 fontSize: 12,
@@ -446,7 +446,7 @@ class _EmissionCheckScreenState extends State<EmissionCheckScreen> with SingleTi
       padding: const EdgeInsets.all(16),
       children: [
         Card(
-          color: Colors.white.withOpacity(0.05),
+          color: Colors.white.withValues(alpha: 0.05),
           child: Padding(
             padding: const EdgeInsets.all(16),
             child: Column(
@@ -479,7 +479,7 @@ class _EmissionCheckScreenState extends State<EmissionCheckScreen> with SingleTi
         ),
         const SizedBox(height: 16),
         Card(
-          color: Colors.blue.withOpacity(0.1),
+          color: Colors.blue.withValues(alpha: 0.1),
           child: Padding(
             padding: const EdgeInsets.all(16),
             child: Column(
@@ -573,7 +573,7 @@ class _EmissionCheckScreenState extends State<EmissionCheckScreen> with SingleTi
       padding: const EdgeInsets.all(16),
       children: [
         Card(
-          color: Colors.white.withOpacity(0.05),
+          color: Colors.white.withValues(alpha: 0.05),
           child: Padding(
             padding: const EdgeInsets.all(16),
             child: Column(
@@ -602,7 +602,7 @@ class _EmissionCheckScreenState extends State<EmissionCheckScreen> with SingleTi
         ),
         const SizedBox(height: 16),
         Card(
-          color: Colors.blue.withOpacity(0.1),
+          color: Colors.blue.withValues(alpha: 0.1),
           child: Padding(
             padding: const EdgeInsets.all(16),
             child: Column(
@@ -635,7 +635,7 @@ class _EmissionCheckScreenState extends State<EmissionCheckScreen> with SingleTi
         ),
         const SizedBox(height: 16),
         Card(
-          color: Colors.orange.withOpacity(0.1),
+          color: Colors.orange.withValues(alpha: 0.1),
           child: Padding(
             padding: const EdgeInsets.all(16),
             child: Column(
@@ -675,7 +675,7 @@ class _EmissionCheckScreenState extends State<EmissionCheckScreen> with SingleTi
             width: 28,
             height: 28,
             decoration: BoxDecoration(
-              color: Colors.blueAccent.withOpacity(0.2),
+              color: Colors.blueAccent.withValues(alpha: 0.2),
               borderRadius: BorderRadius.circular(14),
             ),
             child: Center(

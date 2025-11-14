@@ -95,7 +95,7 @@ class _AiMechanicScreenState extends State<AiMechanicScreen> {
                         )
                       : null,
                   filled: true,
-                  fillColor: Colors.white.withOpacity(0.1),
+                  fillColor: Colors.white.withValues(alpha: 0.1),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
                     borderSide: BorderSide.none,
@@ -108,9 +108,9 @@ class _AiMechanicScreenState extends State<AiMechanicScreen> {
               margin: const EdgeInsets.symmetric(horizontal: 16),
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: Colors.blueAccent.withOpacity(0.2),
+                color: Colors.blueAccent.withValues(alpha: 0.2),
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.blueAccent.withOpacity(0.4)),
+                border: Border.all(color: Colors.blueAccent.withValues(alpha: 0.4)),
               ),
               child: Row(
                 children: [
@@ -169,7 +169,7 @@ class _AiMechanicScreenState extends State<AiMechanicScreen> {
   Widget _buildDtcCardNotFound(String dtcCode, String description, String howToRead) {
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
-      color: Colors.white.withOpacity(0.08),
+      color: Colors.white.withValues(alpha: 0.08),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
       ),
@@ -183,7 +183,7 @@ class _AiMechanicScreenState extends State<AiMechanicScreen> {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
-                    color: Colors.redAccent.withOpacity(0.2),
+                    color: Colors.redAccent.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(6),
                   ),
                   child: Text(
@@ -199,7 +199,7 @@ class _AiMechanicScreenState extends State<AiMechanicScreen> {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
-                    color: Colors.orangeAccent.withOpacity(0.2),
+                    color: Colors.orangeAccent.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(4),
                     border: Border.all(
                       color: Colors.orangeAccent,
@@ -284,7 +284,7 @@ class _AiMechanicScreenState extends State<AiMechanicScreen> {
 
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
-      color: Colors.white.withOpacity(0.08),
+      color: Colors.white.withValues(alpha: 0.08),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
       ),
@@ -301,7 +301,7 @@ class _AiMechanicScreenState extends State<AiMechanicScreen> {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                     decoration: BoxDecoration(
-                      color: Colors.redAccent.withOpacity(0.2),
+                      color: Colors.redAccent.withValues(alpha: 0.2),
                       borderRadius: BorderRadius.circular(6),
                     ),
                     child: Text(
@@ -318,7 +318,7 @@ class _AiMechanicScreenState extends State<AiMechanicScreen> {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                       decoration: BoxDecoration(
-                        color: Colors.purple.withOpacity(0.2),
+                        color: Colors.purple.withValues(alpha: 0.2),
                         borderRadius: BorderRadius.circular(4),
                       ),
                       child: Text(
@@ -334,7 +334,7 @@ class _AiMechanicScreenState extends State<AiMechanicScreen> {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                       decoration: BoxDecoration(
-                        color: _getSeverityColor(severity).withOpacity(0.2),
+                        color: _getSeverityColor(severity).withValues(alpha: 0.2),
                         borderRadius: BorderRadius.circular(4),
                         border: Border.all(
                           color: _getSeverityColor(severity),
@@ -445,7 +445,7 @@ class _AiMechanicScreenState extends State<AiMechanicScreen> {
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: Colors.redAccent.withOpacity(0.2),
+                  color: Colors.redAccent.withValues(alpha: 0.2),
                   borderRadius: const BorderRadius.only(
                     topLeft: Radius.circular(16),
                     topRight: Radius.circular(16),

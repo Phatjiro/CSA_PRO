@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 
 import '../models/vehicle.dart';
 import '../services/vehicle_service.dart';
+import '../data/car_makes.dart';
 
 class VehicleFormScreen extends StatefulWidget {
   final Vehicle? vehicle;
@@ -25,10 +26,10 @@ class _VehicleFormScreenState extends State<VehicleFormScreen> {
   @override
   void initState() {
     super.initState();
+    _makeController.text = widget.vehicle?.make ?? '';
     if (widget.vehicle != null) {
       _nicknameController.text = widget.vehicle!.nickname;
       _vinController.text = widget.vehicle!.vin ?? '';
-      _makeController.text = widget.vehicle!.make ?? '';
       _modelController.text = widget.vehicle!.model ?? '';
       _yearController.text = widget.vehicle!.year?.toString() ?? '';
       _colorController.text = widget.vehicle!.color ?? '';
@@ -125,21 +126,76 @@ class _VehicleFormScreenState extends State<VehicleFormScreen> {
             ),
             const SizedBox(height: 16),
 
-            // Make, Model, Year row
-            Row(
-              children: [
-                Expanded(
-                  flex: 2,
-                  child: TextFormField(
-                    controller: _makeController,
-                    decoration: const InputDecoration(
-                      labelText: 'Make',
-                      hintText: 'e.g., Toyota',
-                      border: OutlineInputBorder(),
+            // Make with search suggestions (optional)
+            RawAutocomplete<String>(
+              optionsBuilder: (textEditingValue) {
+                final query = textEditingValue.text.trim().toLowerCase();
+                if (query.isEmpty) {
+                  return CarMakes.getPopularOnly();
+                }
+                return CarMakes.getAll().where(
+                  (make) => make.toLowerCase().contains(query),
+                );
+              },
+              onSelected: (selection) {
+                _makeController.text = selection;
+              },
+              displayStringForOption: (option) => option,
+              fieldViewBuilder: (context, controller, focusNode, onFieldSubmitted) {
+                // Sync initial value from _makeController
+                if (controller.text.isEmpty && _makeController.text.isNotEmpty) {
+                  controller.text = _makeController.text;
+                }
+                // Sync back to _makeController when text changes
+                controller.addListener(() {
+                  if (_makeController.text != controller.text) {
+                    _makeController.text = controller.text;
+                  }
+                });
+                
+                return TextFormField(
+                  controller: controller,
+                  focusNode: focusNode,
+                  decoration: const InputDecoration(
+                    labelText: 'Make',
+                    hintText: 'Start typing (e.g., Toyota)',
+                    border: OutlineInputBorder(),
+                  ),
+                );
+              },
+              optionsViewBuilder: (context, onSelected, options) {
+                if (options.isEmpty) {
+                  return const SizedBox.shrink();
+                }
+                return Align(
+                  alignment: Alignment.topLeft,
+                  child: Material(
+                    elevation: 4,
+                    borderRadius: BorderRadius.circular(8),
+                    child: SizedBox(
+                      height: 200,
+                      width: MediaQuery.of(context).size.width - 64,
+                      child: ListView.builder(
+                        padding: EdgeInsets.zero,
+                        itemCount: options.length,
+                        itemBuilder: (context, index) {
+                          final option = options.elementAt(index);
+                          return ListTile(
+                            title: Text(option),
+                            onTap: () => onSelected(option),
+                          );
+                        },
+                      ),
                     ),
                   ),
-                ),
-                const SizedBox(width: 12),
+                );
+              },
+            ),
+            const SizedBox(height: 16),
+
+            // Model, Year row
+            Row(
+              children: [
                 Expanded(
                   flex: 2,
                   child: TextFormField(
@@ -196,7 +252,7 @@ class _VehicleFormScreenState extends State<VehicleFormScreen> {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: Colors.blue.withOpacity(0.1),
+                color: Colors.blue.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Row(

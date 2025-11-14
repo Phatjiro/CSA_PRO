@@ -74,33 +74,57 @@ class DemoObdLink implements ObdLink {
     if (cmd == '0105') return _m0105(); // ECT
     if (cmd == '0142') return _m0142(); // Voltage
     if (cmd == '0101') return _m0101(); // MIL + DTC count + readiness
-    if (cmd == '010F') return '41 0F 24'; // IAT ~ 36 C (A-40)
-    if (cmd == '0111') return '41 11 40'; // Throttle ~ 25%
-    if (cmd == '012F') return '41 2F C2'; // Fuel level ~ 76%
-    if (cmd == '0104') return '41 04 66'; // Calc load ~ 40%
-    if (cmd == '010B') return '41 0B 3A'; // MAP ~ 58 kPa
-    if (cmd == '0133') return '41 33 63'; // Baro ~ 99 kPa
-    if (cmd == '0110') return '41 10 02 26'; // MAF ~ 5.5 g/s (0x0226=550)
-    if (cmd == '0146') return '41 46 44'; // Ambient ~ 28 C (A-40)
-    if (cmd == '015E') return '41 5E 80 00 19 9A'; // Lambda=1.00, Volt~0.8V
-    if (cmd == '0103') return '41 03 02'; // Fuel system status = closed loop
-    if (cmd == '010E') return '41 0E 94'; // Timing advance ~ 10 deg
-    if (cmd == '011F') return '41 1F 01 2C'; // Runtime 300s
-    if (cmd == '0121') return '41 21 00 0C'; // Distance with MIL = 12 km
-    if (cmd == '012E') return '41 2E 26'; // Commanded purge ~ 15%
-    if (cmd == '0130') return '41 30 05'; // Warmups since clear = 5
-    if (cmd == '0131') return '41 31 00 78'; // Distance since clear = 120 km
-    if (cmd == '013C') return '41 3C 1E 32'; // Catalyst temp ~ 500C
-    if (cmd == '0143') return '41 43 4D'; // Absolute load ~ 30%
-    if (cmd == '0144') return '41 44 80 00'; // Commanded equiv ratio 1.00
-    if (cmd == '0145') return '41 45 33'; // Relative throttle ~ 20%
-    if (cmd == '0147') return '41 47 40'; // Absolute throttle B ~ 25%
-    if (cmd == '0148') return '41 48 3A'; // Absolute throttle C ~ 23%
-    if (cmd == '0149') return '41 49 2D'; // Pedal position D ~ 18%
-    if (cmd == '014A') return '41 4A 33'; // Pedal position E ~ 20%
-    if (cmd == '014B') return '41 4B 26'; // Pedal position F ~ 15%
-    if (cmd == '014C') return '41 4C 21'; // Commanded throttle actuator ~ 13%
-
+    if (cmd == '010F') return _m010F(); // IAT dynamic
+    if (cmd == '0111') return _m0111(); // Throttle dynamic
+    if (cmd == '012F') return _m012F(); // Fuel level dynamic
+    if (cmd == '0104') return _m0104(); // Calc load dynamic
+    if (cmd == '010B') return _m010B(); // MAP dynamic
+    if (cmd == '0133') return _m0133(); // Baro dynamic
+    if (cmd == '0110') return _m0110(); // MAF dynamic
+    if (cmd == '0146') return _m0146(); // Ambient dynamic
+    if (cmd == '015E') return _m015E(); // Lambda dynamic
+    if (cmd == '0103') return _m0103(); // Fuel system status dynamic
+    if (cmd == '010E') return _m010E(); // Timing advance dynamic
+    if (cmd == '011F') return _m011F(); // Runtime dynamic
+    if (cmd == '0121') return _m0121(); // Distance with MIL dynamic
+    if (cmd == '012E') return _m012E(); // Commanded purge dynamic
+    if (cmd == '0130') return _m0130(); // Warmups since clear dynamic
+    if (cmd == '0131') return _m0131(); // Distance since clear dynamic
+    if (cmd == '013C') return _m013C(); // Catalyst temp dynamic
+    if (cmd == '0143') return _m0143(); // Absolute load dynamic
+    if (cmd == '0144') return _m0144(); // Commanded equiv ratio dynamic
+    if (cmd == '0145') return _m0145(); // Relative throttle dynamic
+    if (cmd == '0147') return _m0147(); // Absolute throttle B dynamic
+    if (cmd == '0148') return _m0148(); // Absolute throttle C dynamic
+    if (cmd == '0149') return _m0149(); // Pedal position D dynamic
+    if (cmd == '014A') return _m014A(); // Pedal position E dynamic
+    if (cmd == '014B') return _m014B(); // Pedal position F dynamic
+    if (cmd == '014C') return _m014C(); // Commanded throttle actuator dynamic
+    if (cmd == '014D') return _m014D(); // Time run with MIL dynamic
+    if (cmd == '014E') return _m014E(); // Time since codes cleared dynamic
+    if (cmd == '014F') return _m014F(); // Max equiv ratio dynamic
+    if (cmd == '0150') return _m0150(); // Max air flow dynamic
+    if (cmd == '0151') return _m0151(); // Fuel type dynamic
+    if (cmd == '0152') return _m0152(); // Ethanol fuel dynamic
+    if (cmd == '0153') return _m0153(); // Abs evap pressure dynamic
+    if (cmd == '0154') return _m0154(); // Evap pressure dynamic
+    if (cmd == '0155') return _m0155(); // Short term O2 trim 1 dynamic
+    if (cmd == '0156') return _m0156(); // Long term O2 trim 1 dynamic
+    if (cmd == '0157') return _m0157(); // Short term O2 trim 2 dynamic
+    if (cmd == '0158') return _m0158(); // Long term O2 trim 2 dynamic
+    if (cmd == '0159') return _m0159(); // Short term O2 trim 3 dynamic
+    if (cmd == '015A') return _m015A(); // Long term O2 trim 3 dynamic
+    if (cmd == '015B') return _m015B(); // Short term O2 trim 4 dynamic
+    // 015C handled below in "Additional Mode 01 PIDs" section (Engine Oil Temp)
+    if (cmd == '013D') return _m013D(); // Catalyst temp 2 dynamic
+    if (cmd == '013E') return _m013E(); // Catalyst temp 3 dynamic
+    if (cmd == '013F') return _m013F(); // Catalyst temp 4 dynamic
+    if (cmd == '010A') return _m010A(); // Fuel pressure dynamic
+    if (cmd == '0106') return _m0106(); // Short term fuel trim 1 dynamic
+    if (cmd == '0107') return _m0107(); // Long term fuel trim 1 dynamic
+    if (cmd == '0108') return _m0108(); // Short term fuel trim 2 dynamic
+    if (cmd == '0109') return _m0109(); // Long term fuel trim 2 dynamic
+    
     // O2 narrow band sensors (0114-011B): A=V*200, B=(STFT+100)*1.28
     if (cmd == '0114') return _o2(0.45, 0);
     if (cmd == '0115') return _o2(0.42, 1);
@@ -110,6 +134,13 @@ class DemoObdLink implements ObdLink {
     if (cmd == '0119') return _o2(0.40, -1);
     if (cmd == '011A') return _o2(0.46, 2);
     if (cmd == '011B') return _o2(0.47, 1);
+    
+    // Additional Mode 01 PIDs
+    if (cmd == '015C') return _m015C(); // Engine oil temp
+    if (cmd == '015F') return _m015F(); // Engine fuel rate
+    if (cmd == '0161') return _m0161(); // Driver demand torque
+    if (cmd == '0162') return _m0162(); // Actual torque
+    if (cmd == '0163') return _m0163(); // Reference torque
 
     // Freeze Frame Mode 02 minimal set (replay some current values)
     if (cmd.startsWith('02')) return _mode02(cmd);
@@ -273,6 +304,155 @@ class DemoObdLink implements ObdLink {
   }
 
   String _h2(int v) => v.clamp(0, 255).toRadixString(16).padLeft(2, '0').toUpperCase();
+  
+  // Helper: random in range
+  int _rand(int min, int max) => min + _rng.nextInt(max - min + 1);
+  
+  // Dynamic sensor methods - RANDOM mỗi lần gọi!
+  String _m010F() => '41 0F ${_h2(_rand(20, 50) + 40)}'; // IAT: 20-50°C
+  String _m0111() => '41 11 ${_h2(_rand(10, 90))}'; // Throttle: 10-90%
+  String _m012F() => '41 2F ${_h2(_rand(20, 100))}'; // Fuel: 20-100%
+  String _m0104() => '41 04 ${_h2(_rand(10, 80))}'; // Load: 10-80%
+  String _m010B() => '41 0B ${_h2(_rand(20, 80))}'; // MAP: 20-80 kPa
+  String _m0133() => '41 33 ${_h2(_rand(95, 105))}'; // Baro: 95-105 kPa
+  
+  String _m0110() {
+    final maf = _rand(500, 4500); // MAF: 5-45 g/s (x100)
+    return '41 10 ${_h2(maf ~/ 256)} ${_h2(maf % 256)}';
+  }
+  
+  String _m0146() => '41 46 ${_h2(_rand(15, 35) + 40)}'; // Ambient: 15-35°C
+  
+  String _m015E() {
+    final lambda = _rand(29000, 33000); // Lambda: 0.88-1.00 (x32768)
+    return '41 5E ${_h2(lambda ~/ 256)} ${_h2(lambda % 256)} 19 9A';
+  }
+  
+  String _m0103() => '41 03 0${_rand(1, 3).toRadixString(16)}'; // Fuel status: 1-3
+  String _m010E() => '41 0E ${_h2(_rand(5, 25) + 128)}'; // Timing: 5-25° (offset +128)
+  
+  String _m011F() {
+    final runtime = _rand(0, 3600); // Runtime: 0-3600s
+    return '41 1F ${_h2(runtime ~/ 256)} ${_h2(runtime % 256)}';
+  }
+  
+  String _m0121() {
+    final dist = _rand(0, 500); // Distance with MIL: 0-500 km
+    return '41 21 ${_h2(dist ~/ 256)} ${_h2(dist % 256)}';
+  }
+  
+  String _m012E() => '41 2E ${_h2(_rand(10, 40))}'; // Purge: 10-40%
+  String _m0130() => '41 30 ${_h2(_rand(5, 20))}'; // Warmups: 5-20
+  
+  String _m0131() {
+    final dist = _rand(0, 5000); // Distance since clear: 0-5000 km
+    return '41 31 ${_h2(dist ~/ 256)} ${_h2(dist % 256)}';
+  }
+  
+  String _m013C() {
+    final temp = _rand(3000, 6000); // Catalyst: 300-600°C (x10)
+    return '41 3C ${_h2(temp ~/ 256)} ${_h2(temp % 256)}';
+  }
+  
+  String _m0143() => '41 43 ${_h2(_rand(15, 70))}'; // Absolute load: 15-70%
+  
+  String _m0144() {
+    final ratio = _rand(30000, 34000); // Equiv ratio: 0.91-1.03 (x32768)
+    return '41 44 ${_h2(ratio ~/ 256)} ${_h2(ratio % 256)}';
+  }
+  
+  String _m0145() => '41 45 ${_h2(_rand(10, 90))}'; // Relative throttle
+  String _m0147() => '41 47 ${_h2(_rand(10, 85))}'; // Absolute throttle B
+  String _m0148() => '41 48 ${_h2(_rand(10, 80))}'; // Absolute throttle C
+  String _m0149() => '41 49 ${_h2(_rand(10, 95))}'; // Pedal D
+  String _m014A() => '41 4A ${_h2(_rand(10, 90))}'; // Pedal E
+  String _m014B() => '41 4B ${_h2(_rand(10, 85))}'; // Pedal F
+  String _m014C() => '41 4C ${_h2(_rand(10, 88))}'; // Commanded throttle actuator
+  
+  String _m014D() {
+    final time = _rand(0, 300); // Time run with MIL: 0-300 min
+    return '41 4D ${_h2(time ~/ 256)} ${_h2(time % 256)}';
+  }
+  
+  String _m014E() {
+    final time = _rand(0, 3000); // Time since codes cleared: 0-3000 min
+    return '41 4E ${_h2(time ~/ 256)} ${_h2(time % 256)}';
+  }
+  
+  String _m014F() {
+    final ratio = _rand(32000, 40000); // Max equiv ratio: 0.97-1.22 (x32768)
+    return '41 4F ${_h2(ratio ~/ 256)} ${_h2(ratio % 256)}';
+  }
+  
+  String _m0150() => '41 50 ${_h2(_rand(50, 255))}'; // Max air flow: 50-255 g/s
+  String _m0151() => '41 51 0${_rand(1, 4).toRadixString(16)}'; // Fuel type: 1-4
+  String _m0152() => '41 52 ${_h2(_rand(0, 15))}'; // Ethanol fuel: 0-15%
+  
+  String _m0153() {
+    final press = _rand(8000, 15000); // Abs evap pressure: 80-150 kPa (x100)
+    return '41 53 ${_h2(press ~/ 256)} ${_h2(press % 256)}';
+  }
+  
+  String _m0154() {
+    final press = _rand(-3000, 3000) + 32768; // Evap pressure: -30 to +30 kPa (signed, offset)
+    return '41 54 ${_h2(press ~/ 256)} ${_h2(press % 256)}';
+  }
+  
+  // O2 Trims: -100 to +99.22% → encoded as (value+100)*1.28
+  String _m0155() => '41 55 ${_h2(_rand(100, 180))}'; // Short O2 trim 1: -22 to +37%
+  String _m0156() => '41 56 ${_h2(_rand(100, 180))}'; // Long O2 trim 1: -22 to +37%
+  String _m0157() => '41 57 ${_h2(_rand(100, 180))}'; // Short O2 trim 2: -22 to +37%
+  String _m0158() => '41 58 ${_h2(_rand(100, 180))}'; // Long O2 trim 2: -22 to +37%
+  String _m0159() => '41 59 ${_h2(_rand(100, 180))}'; // Short O2 trim 3: -22 to +37%
+  String _m015A() => '41 5A ${_h2(_rand(100, 180))}'; // Long O2 trim 3: -22 to +37%
+  String _m015B() => '41 5B ${_h2(_rand(100, 180))}'; // Short O2 trim 4: -22 to +37%
+  // 015C is Engine Oil Temp - see _m015C() below in "New Mode 01 PIDs" section
+  
+  String _m013D() {
+    final temp = _rand(3000, 6000); // Catalyst temp 2: 300-600°C (x10)
+    return '41 3D ${_h2(temp ~/ 256)} ${_h2(temp % 256)}';
+  }
+  
+  String _m013E() {
+    final temp = _rand(3000, 6000); // Catalyst temp 3: 300-600°C (x10)
+    return '41 3E ${_h2(temp ~/ 256)} ${_h2(temp % 256)}';
+  }
+  
+  String _m013F() {
+    final temp = _rand(3000, 6000); // Catalyst temp 4: 300-600°C (x10)
+    return '41 3F ${_h2(temp ~/ 256)} ${_h2(temp % 256)}';
+  }
+  
+  String _m010A() => '41 0A ${_h2(_rand(100, 166))}'; // Fuel pressure: 300-500 kPa (x3, normal range)
+  
+  // Fuel Trims: Formula (A-128)*100/128, normal range -10% to +10% → A = 115-141
+  String _m0106() => '41 06 ${_h2(_rand(115, 141))}'; // Short fuel trim 1: -10 to +10% (normal)
+  String _m0107() => '41 07 ${_h2(_rand(115, 141))}'; // Long fuel trim 1: -10 to +10% (normal)
+  String _m0108() => '41 08 ${_h2(_rand(115, 141))}'; // Short fuel trim 2: -10 to +10% (normal)
+  String _m0109() => '41 09 ${_h2(_rand(115, 141))}'; // Long fuel trim 2: -10 to +10% (normal)
+  
+  // New Mode 01 PIDs
+  String _m015C() {
+    // Engine oil temp: typical 80-110°C
+    // Formula: A - 40, so for 80°C we need A=120, for 110°C we need A=150
+    final temp = _rand(120, 150);
+    return '41 5C ${_h2(temp)}';
+  }
+  
+  String _m015F() {
+    // Engine fuel rate: 0-3212.75 L/h → encoded as value/0.05 = ((A*256)+B)
+    final rate = _rand(50, 200); // 2.5-10 L/h
+    return '41 5F ${_h2(rate ~/ 256)} ${_h2(rate % 256)}';
+  }
+  
+  String _m0161() => '41 61 ${_h2(_rand(100, 160))}'; // Driver demand torque: -25 to +35% (offset -125)
+  String _m0162() => '41 62 ${_h2(_rand(90, 150))}'; // Actual torque: -35 to +25% (offset -125)
+  
+  String _m0163() {
+    // Reference torque: 0-65535 Nm (2 bytes)
+    final torque = _rand(1500, 3000); // 1500-3000 Nm
+    return '41 63 ${_h2(torque ~/ 256)} ${_h2(torque % 256)}';
+  }
 }
 
 

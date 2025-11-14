@@ -217,7 +217,7 @@ class _LiveDataSelectScreenState extends State<LiveDataSelectScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Select Live Data'),
-        backgroundColor: const Color(0xFF2E7D32),
+        backgroundColor: const Color(0xFF2ECC71), // Green - matches Monitoring & Reporting group
         foregroundColor: Colors.white,
         elevation: 0,
       ),
@@ -227,7 +227,7 @@ class _LiveDataSelectScreenState extends State<LiveDataSelectScreen> {
           Container(
             width: double.infinity,
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            color: const Color(0xFF2E7D32).withOpacity(0.1),
+            color: const Color(0xFF2E7D32).withValues(alpha: 0.1),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -271,7 +271,7 @@ class _LiveDataSelectScreenState extends State<LiveDataSelectScreen> {
                   child: Theme(
                     data: Theme.of(context).copyWith(
                       checkboxTheme: CheckboxThemeData(
-                        side: BorderSide(color: Colors.white.withOpacity(0.5)),
+                        side: BorderSide(color: Colors.white.withValues(alpha: 0.5)),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
                         fillColor: MaterialStateProperty.resolveWith((states) {
                           if (states.contains(MaterialState.selected)) return const Color(0xFF2E7D32);
@@ -292,13 +292,13 @@ class _LiveDataSelectScreenState extends State<LiveDataSelectScreen> {
                         margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
                         decoration: BoxDecoration(
                             color: isSelected 
-                                ? const Color(0xFF2E7D32).withOpacity(0.12)
-                                : Colors.white.withOpacity(0.04),
+                                ? const Color(0xFF2E7D32).withValues(alpha: 0.12)
+                                : Colors.white.withValues(alpha: 0.04),
                           borderRadius: BorderRadius.circular(8),
                           border: Border.all(
                               color: isSelected 
                                   ? const Color(0xFF2E7D32)
-                                  : Colors.white.withOpacity(0.08),
+                                  : Colors.white.withValues(alpha: 0.08),
                             width: 1,
                           ),
                         ),
@@ -339,16 +339,16 @@ class _LiveDataSelectScreenState extends State<LiveDataSelectScreen> {
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
                   colors: [
-                    Colors.white.withOpacity(0.04),
-                    Colors.white.withOpacity(0.02),
+                    Colors.white.withValues(alpha: 0.04),
+                    Colors.white.withValues(alpha: 0.02),
                   ],
                 ),
                 border: Border(
-                  top: BorderSide(color: Colors.white.withOpacity(0.06), width: 1),
+                  top: BorderSide(color: Colors.white.withValues(alpha: 0.06), width: 1),
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.25),
+                    color: Colors.black.withValues(alpha: 0.25),
                     blurRadius: 12,
                     offset: const Offset(0, -6),
                   ),
@@ -366,7 +366,7 @@ class _LiveDataSelectScreenState extends State<LiveDataSelectScreen> {
                       style: OutlinedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 12),
                         foregroundColor: Colors.white,
-                        side: BorderSide(color: Colors.white.withOpacity(0.24), width: 1),
+                        side: BorderSide(color: Colors.white.withValues(alpha: 0.24), width: 1),
                       ),
                       child: const Text('Clear All'),
                     ),

@@ -56,10 +56,24 @@ class _AccelerationTestsScreenState extends State<AccelerationTestsScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        centerTitle: true,
-        title: Text('$_currentSpeed km/h'),
+        title: const Text('Racing Mode'),
         backgroundColor: const Color(0xFFE91E63),
         foregroundColor: Colors.white,
+        actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: 16),
+            child: Center(
+              child: Text(
+                '$_currentSpeed km/h',
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
       body: SafeArea(
         child: ListView.separated(

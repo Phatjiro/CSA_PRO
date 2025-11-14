@@ -130,7 +130,7 @@ class _MaintenanceFormScreenState extends State<MaintenanceFormScreen> {
           children: [
             // Quick templates
             Card(
-              color: Colors.blue.withOpacity(0.1),
+              color: Colors.blue.withValues(alpha: 0.1),
               child: Padding(
                 padding: const EdgeInsets.all(12),
                 child: Column(

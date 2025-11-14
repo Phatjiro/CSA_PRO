@@ -137,7 +137,7 @@ class _IssueForecastScreenState extends State<IssueForecastScreen> {
 
   Widget _buildSummaryCard(bool hasWarnings) {
     return Card(
-      color: Colors.white.withOpacity(0.08),
+      color: Colors.white.withValues(alpha: 0.08),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
       ),
@@ -183,11 +183,11 @@ class _IssueForecastScreenState extends State<IssueForecastScreen> {
     required Color color,
   }) {
     return Card(
-      color: Colors.white.withOpacity(0.08),
+      color: Colors.white.withValues(alpha: 0.08),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
         side: BorderSide(
-          color: color.withOpacity(0.3),
+          color: color.withValues(alpha: 0.3),
           width: 1,
         ),
       ),
@@ -199,7 +199,7 @@ class _IssueForecastScreenState extends State<IssueForecastScreen> {
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: color.withOpacity(0.2),
+                color: color.withValues(alpha: 0.2),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Icon(icon, color: color, size: 24),
@@ -236,11 +236,11 @@ class _IssueForecastScreenState extends State<IssueForecastScreen> {
 
   Widget _buildNoWarningsCard() {
     return Card(
-      color: Colors.greenAccent.withOpacity(0.1),
+      color: Colors.greenAccent.withValues(alpha: 0.1),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
         side: BorderSide(
-          color: Colors.greenAccent.withOpacity(0.3),
+          color: Colors.greenAccent.withValues(alpha: 0.3),
           width: 1,
         ),
       ),

@@ -471,7 +471,7 @@ class _LiveDataChartScreenState extends State<LiveDataChartScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Live Data Chart'),
-        backgroundColor: const Color(0xFF2E7D32),
+        backgroundColor: const Color(0xFF2ECC71), // Green - matches Monitoring & Reporting group
         foregroundColor: Colors.white,
         actions: [
           IconButton(
@@ -545,7 +545,7 @@ class _LiveDataChartScreenState extends State<LiveDataChartScreen> {
           Container(
             width: double.infinity,
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            color: const Color(0xFF2E7D32).withOpacity(0.1),
+            color: const Color(0xFF2E7D32).withValues(alpha: 0.1),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
