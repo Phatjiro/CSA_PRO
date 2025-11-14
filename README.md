@@ -2,6 +2,20 @@
 
 A comprehensive OBD-II car scanner solution with ELM327 emulator and Flutter mobile application.
 
+**Current Version:** v1.3.0 (November 13, 2024)
+
+## 🎉 Latest Update (v1.3.0)
+
+**New Features:**
+- 🔥 **78 Sensors Total** (69 PIDs + 9 calculated) - Up from 71
+- 🌡️ **4-Point Catalyst Monitoring** - Complete temperature coverage
+- ⛽ **Professional Fuel Diagnostics** - Fuel Trim analysis + Fuel Pressure
+- 🚗 **Enhanced All Sensors Screen** - More comprehensive data for users
+
+See [CHANGELOG.md](CHANGELOG.md) for complete version history.
+
+📚 **[Documentation Index](DOCS_INDEX.md)** - Complete guide to all documentation
+
 ## Project Structure
 
 ```
@@ -20,9 +34,10 @@ Node.js-based emulator that simulates ELM327 OBD-II adapters for development and
 **Features:**
 - Web interface for configuration and monitoring
 - TCP server for OBD-II connections
-- Supports 200+ OBD PIDs (Mode 01, 02, 03, 04, 06, 09)
+- **71 PIDs Mode 01** (Live Data) + Modes 02, 03, 04, 06, 09
 - Real-time data streaming
 - REST API for configuration
+- Test script for validation
 
 **Quick Start:**
 ```bash
@@ -37,12 +52,22 @@ Access web interface at `http://localhost:3000`
 Cross-platform mobile application for OBD-II diagnostics and vehicle monitoring.
 
 **Key Features:**
-- **Live Data**: Real-time dashboard with gauges and charts
+- **Live Data**: Real-time dashboard with gauges and charts - **78 Sensors**
+- **All Sensors**: Comprehensive sensor list organized by category
 - **Diagnostics**: Read/clear DTCs, freeze frame analysis, MIL status
 - **Testing**: Mode 06 scan, O2 sensor test, battery detection, acceleration tests
 - **Emission**: Readiness monitors, emission compliance checking
 - **Vehicle Management**: Multi-vehicle support, maintenance tracking
 - **Connection**: TCP/IP, Bluetooth Low Energy (BLE), Demo mode
+
+**Sensor Categories:**
+- 🏎️ **Engine** (10): RPM, Load, Timing, Runtime, etc.
+- 🌡️ **Temperature** (8): Coolant, Intake, Catalyst (4-point monitoring)
+- ⛽ **Fuel** (12): Level, Pressure, Fuel Trim (short/long term), Ethanol
+- 💨 **Air** (4): MAF, MAP, Barometric Pressure
+- 🎚️ **Throttle** (8): Position, Commanded, Relative positions
+- 🔬 **Advanced** (18): O2 sensors, Control module voltage, etc.
+- 🔧 **Calculated** (9): HP, AFR, MPG, 0-100 time, etc.
 
 **Quick Start:**
 ```bash

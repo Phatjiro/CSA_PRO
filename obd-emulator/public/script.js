@@ -35,6 +35,7 @@ const elements = {
     toggleLiveDataViewBtn: document.getElementById('toggleLiveDataViewBtn'),
     // Live mode toggle
     liveModeToggle: document.getElementById('liveModeToggle'),
+    accelerationToggle: document.getElementById('accelerationToggle'),
     
     // Live data
     connectedClients: document.getElementById('connectedClients'),
@@ -112,6 +113,7 @@ const dtcEls = {
   btnStored: document.getElementById('btnDtcStored'),
   btnPending: document.getElementById('btnDtcPending'),
   btnPermanent: document.getElementById('btnDtcPermanent'),
+  btnRandom: document.getElementById('btnDtcRandom'),
   btnClear: document.getElementById('btnDtcClear'),
   list: document.getElementById('dtcList'),
   mil: document.getElementById('milStatus'),
@@ -146,6 +148,7 @@ document.addEventListener('DOMContentLoaded', function() {
     if (dtcEls.btnStored) dtcEls.btnStored.addEventListener('click', () => loadDtc('stored'));
     if (dtcEls.btnPending) dtcEls.btnPending.addEventListener('click', () => loadDtc('pending'));
     if (dtcEls.btnPermanent) dtcEls.btnPermanent.addEventListener('click', () => loadDtc('permanent'));
+    if (dtcEls.btnRandom) dtcEls.btnRandom.addEventListener('click', () => randomDtc());
     if (dtcEls.btnClear) dtcEls.btnClear.addEventListener('click', () => clearDtc());
 
     // Freeze Frame buttons
@@ -348,6 +351,32 @@ function setupEventListeners() {
         elements.liveModeToggle.addEventListener('change', () => {
             const mode = elements.liveModeToggle.checked ? 'random' : 'static';
             setLiveMode(mode);
+        });
+    }
+    
+    // Acceleration toggle
+    if (elements.accelerationToggle) {
+        elements.accelerationToggle.addEventListener('change', () => {
+            if (elements.accelerationToggle.checked) {
+                // Start acceleration test: 0-200 km/h in 20s
+                fetch('/api/acceleration/start', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ startSpeed: 0, endSpeed: 200, duration: 20000 })
+                })
+                .then(res => res.json())
+                .then(data => console.log('Acceleration started:', data))
+                .catch(err => {
+                    console.error('Failed to start acceleration:', err);
+                    elements.accelerationToggle.checked = false;
+                });
+            } else {
+                // Stop acceleration
+                fetch('/api/acceleration/stop', { method: 'POST' })
+                    .then(res => res.json())
+                    .then(data => console.log('Acceleration stopped:', data))
+                    .catch(err => console.error('Failed to stop acceleration:', err));
+            }
         });
     }
 }
@@ -660,6 +689,22 @@ function clearDtc() {
     .then(r => r.json())
     .then(() => loadDtc('stored'))
     .catch(() => {});
+}
+
+function randomDtc() {
+  fetch('/api/dtc/random', { method: 'POST' })
+    .then(r => r.json())
+    .then(res => {
+      if (res && res.success) {
+        const codes = Array.isArray(res.codes) ? res.codes.join(', ') : 'P****';
+        addLogEntry('INFO', `Random DTCs injected: ${codes}`);
+        loadDtc('stored');
+        loadFreezeFrame();
+      } else {
+        addLogEntry('ERROR', 'Failed to inject random DTC');
+      }
+    })
+    .catch(err => addLogEntry('ERROR', 'Failed to inject random DTC: ' + err.message));
 }
 
 function renderDtc(data) {

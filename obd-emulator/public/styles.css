@@ -286,6 +286,16 @@ body {
     transform: translateY(-2px);
 }
 
+.btn-warning {
+    background: #f39c12;
+    color: #2d3436;
+}
+
+.btn-warning:hover:not(:disabled) {
+    background: #d68910;
+    transform: translateY(-2px);
+}
+
 .btn-secondary {
     background: #6c757d;
     color: white;

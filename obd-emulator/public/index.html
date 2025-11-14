@@ -133,6 +133,14 @@
                                 <span class="toggle-text">Live Mode: Random</span>
                             </label>
                         </div>
+                        
+                        <div class="toggle-item">
+                            <label class="toggle-label" title="Tăng tốc tự động 0-200 km/h trong 20s (cho Racing Mode test)">
+                                <input type="checkbox" id="accelerationToggle" class="toggle-input">
+                                <span class="toggle-slider"></span>
+                                <span class="toggle-text">Acceleration Test</span>
+                            </label>
+                        </div>
                     </div>
                 </div>
 
@@ -404,6 +412,10 @@
                             <button id="btnDtcStored" class="btn btn-small">Stored</button>
                             <button id="btnDtcPending" class="btn btn-small">Pending</button>
                             <button id="btnDtcPermanent" class="btn btn-small">Permanent</button>
+                            <button id="btnDtcRandom" class="btn btn-small btn-warning">
+                                <i class="fas fa-bug"></i>
+                                Random
+                            </button>
                             <button id="btnDtcClear" class="btn btn-small btn-danger">Clear</button>
                         </div>
                     </div>
