@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="vi">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -79,7 +79,7 @@
                     <h3>Settings</h3>
                     <div class="toggle-grid">
                         <div class="toggle-item">
-                            <label class="toggle-label">
+                            <label class="toggle-label" title="Bật/tắt phản hồi lại ký tự bạn gõ (AT E0/E1)">
                                 <input type="checkbox" id="echo" class="toggle-input">
                                 <span class="toggle-slider"></span>
                                 <span class="toggle-text">Echo</span>
@@ -87,7 +87,7 @@
                         </div>
                         
                         <div class="toggle-item">
-                            <label class="toggle-label">
+                            <label class="toggle-label" title="Hiển thị/ẩn header CAN trong phản hồi (AT H0/H1)">
                                 <input type="checkbox" id="headers" class="toggle-input" checked>
                                 <span class="toggle-slider"></span>
                                 <span class="toggle-text">Headers</span>
@@ -95,7 +95,7 @@
                         </div>
                         
                         <div class="toggle-item">
-                            <label class="toggle-label">
+                            <label class="toggle-label" title="Hiển thị/ẩn DLC (Data Length Code) (AT D0/D1)">
                                 <input type="checkbox" id="dlc" class="toggle-input">
                                 <span class="toggle-slider"></span>
                                 <span class="toggle-text">DLC</span>
@@ -103,7 +103,7 @@
                         </div>
                         
                         <div class="toggle-item">
-                            <label class="toggle-label">
+                            <label class="toggle-label" title="Thêm ký tự xuống dòng trong phản hồi (AT L0/L1)">
                                 <input type="checkbox" id="lineFeed" class="toggle-input">
                                 <span class="toggle-slider"></span>
                                 <span class="toggle-text">Line feed</span>
@@ -111,7 +111,7 @@
                         </div>
                         
                         <div class="toggle-item">
-                            <label class="toggle-label">
+                            <label class="toggle-label" title="Thêm khoảng trắng giữa các byte dữ liệu trong phản hồi (AT S0/S1)">
                                 <input type="checkbox" id="spaces" class="toggle-input" checked>
                                 <span class="toggle-slider"></span>
                                 <span class="toggle-text">Spaces</span>
@@ -119,10 +119,26 @@
                         </div>
                         
                         <div class="toggle-item">
-                            <label class="toggle-label">
+                            <label class="toggle-label" title="Thêm 2 lần xuống dòng trong phản hồi">
                                 <input type="checkbox" id="doubleLF" class="toggle-input">
                                 <span class="toggle-slider"></span>
                                 <span class="toggle-text">Double LF</span>
+                            </label>
+                        </div>
+
+                        <div class="toggle-item">
+                            <label class="toggle-label" title="Chế độ tạo dữ liệu: Bật = Random, Tắt = Static">
+                                <input type="checkbox" id="liveModeToggle" class="toggle-input">
+                                <span class="toggle-slider"></span>
+                                <span class="toggle-text">Live Mode: Random</span>
+                            </label>
+                        </div>
+                        
+                        <div class="toggle-item">
+                            <label class="toggle-label" title="Tăng tốc tự động 0-200 km/h trong 20s (cho Racing Mode test)">
+                                <input type="checkbox" id="accelerationToggle" class="toggle-input">
+                                <span class="toggle-slider"></span>
+                                <span class="toggle-text">Acceleration Test</span>
                             </label>
                         </div>
                     </div>
@@ -154,56 +170,285 @@
                         <div class="connection-info">
                             <span id="connectedClients">0</span> clients connected
                         </div>
+                        <button id="toggleLiveDataViewBtn" class="btn btn-small" title="Show all">
+                            <i class="fas fa-expand"></i>
+                            Show full
+                        </button>
                     </div>
                     
-                    <div class="live-data-grid">
+                    <div class="live-data-grid" id="liveDataGrid">
+                        <!-- Core Metrics -->
                         <div class="data-card">
                             <div class="data-value" id="engineRPM">0</div>
                             <div class="data-label">Engine RPM</div>
-                            <div class="data-bar">
-                                <div class="data-progress" id="rpmBar"></div>
-                            </div>
                         </div>
-                        
                         <div class="data-card">
                             <div class="data-value" id="vehicleSpeed">0</div>
                             <div class="data-label">Speed (km/h)</div>
-                            <div class="data-bar">
-                                <div class="data-progress" id="speedBar"></div>
-                            </div>
                         </div>
-                        
                         <div class="data-card">
                             <div class="data-value" id="coolantTemp">0</div>
                             <div class="data-label">Coolant Temp (°C)</div>
-                            <div class="data-bar">
-                                <div class="data-progress" id="coolantBar"></div>
-                            </div>
                         </div>
-                        
                         <div class="data-card">
                             <div class="data-value" id="intakeTemp">0</div>
                             <div class="data-label">Intake Temp (°C)</div>
-                            <div class="data-bar">
-                                <div class="data-progress" id="intakeBar"></div>
-                            </div>
                         </div>
-                        
                         <div class="data-card">
                             <div class="data-value" id="throttlePosition">0</div>
                             <div class="data-label">Throttle Position (%)</div>
-                            <div class="data-bar">
-                                <div class="data-progress" id="throttleBar"></div>
-                            </div>
                         </div>
-                        
                         <div class="data-card">
                             <div class="data-value" id="fuelLevel">0</div>
                             <div class="data-label">Fuel Level (%)</div>
-                            <div class="data-bar">
-                                <div class="data-progress" id="fuelBar"></div>
-                            </div>
                         </div>
+                        <div class="data-card">
+                            <div class="data-value" id="engineLoad">0</div>
+                            <div class="data-label">Engine Load (%)</div>
+                        </div>
+                        <div class="data-card">
+                            <div class="data-value" id="map">0</div>
+                            <div class="data-label">MAP (kPa)</div>
+                        </div>
+                        <div class="data-card">
+                            <div class="data-value" id="baro">0</div>
+                            <div class="data-label">Baro (kPa)</div>
+                        </div>
+                        <div class="data-card">
+                            <div class="data-value" id="maf">0</div>
+                            <div class="data-label">MAF (g/s)</div>
+                        </div>
+                        <div class="data-card">
+                            <div class="data-value" id="voltage">0</div>
+                            <div class="data-label">Voltage (V)</div>
+                        </div>
+                        <div class="data-card">
+                            <div class="data-value" id="ambient">0</div>
+                            <div class="data-label">Ambient (°C)</div>
+                        </div>
+                        <div class="data-card">
+                            <div class="data-value" id="lambda">0</div>
+                            <div class="data-label">Lambda (λ)</div>
+                        </div>
+                        
+                        <!-- Additional Metrics -->
+                        <div class="data-card">
+                            <div class="data-value" id="fuelSystemStatus">0</div>
+                            <div class="data-label">Fuel System Status</div>
+                        </div>
+                        <div class="data-card">
+                            <div class="data-value" id="timingAdvance">0</div>
+                            <div class="data-label">Timing Advance (°)</div>
+                        </div>
+                        <div class="data-card">
+                            <div class="data-value" id="runtimeSinceStart">0</div>
+                            <div class="data-label">Runtime (s)</div>
+                        </div>
+                        <div class="data-card">
+                            <div class="data-value" id="distanceWithMIL">0</div>
+                            <div class="data-label">MIL Distance (km)</div>
+                        </div>
+                        <div class="data-card">
+                            <div class="data-value" id="commandedPurge">0</div>
+                            <div class="data-label">Commanded Purge (%)</div>
+                        </div>
+                        <div class="data-card">
+                            <div class="data-value" id="warmupsSinceClear">0</div>
+                            <div class="data-label">Warm-ups Since Clear</div>
+                        </div>
+                        <div class="data-card">
+                            <div class="data-value" id="distanceSinceClear">0</div>
+                            <div class="data-label">Distance Since Clear (km)</div>
+                        </div>
+                        <div class="data-card">
+                            <div class="data-value" id="catalystTemp">0</div>
+                            <div class="data-label">Catalyst Temp (°C)</div>
+                        </div>
+                        <div class="data-card">
+                            <div class="data-value" id="absoluteLoad">0</div>
+                            <div class="data-label">Absolute Load (%)</div>
+                        </div>
+                        <div class="data-card">
+                            <div class="data-value" id="commandedEquivRatio">0</div>
+                            <div class="data-label">Commanded Equiv Ratio</div>
+                        </div>
+                        <div class="data-card">
+                            <div class="data-value" id="relativeThrottle">0</div>
+                            <div class="data-label">Relative Throttle (%)</div>
+                        </div>
+                        <div class="data-card">
+                            <div class="data-value" id="absoluteThrottleB">0</div>
+                            <div class="data-label">Abs Throttle B (%)</div>
+                        </div>
+                        <div class="data-card">
+                            <div class="data-value" id="absoluteThrottleC">0</div>
+                            <div class="data-label">Abs Throttle C (%)</div>
+                        </div>
+                        <div class="data-card">
+                            <div class="data-value" id="pedalPositionD">0</div>
+                            <div class="data-label">Pedal Position D (%)</div>
+                        </div>
+                        <div class="data-card">
+                            <div class="data-value" id="pedalPositionE">0</div>
+                            <div class="data-label">Pedal Position E (%)</div>
+                        </div>
+                        <div class="data-card">
+                            <div class="data-value" id="pedalPositionF">0</div>
+                            <div class="data-label">Pedal Position F (%)</div>
+                        </div>
+                        <div class="data-card">
+                            <div class="data-value" id="commandedThrottleActuator">0</div>
+                            <div class="data-label">Throttle Actuator (%)</div>
+                        </div>
+                        <div class="data-card">
+                            <div class="data-value" id="timeRunWithMIL">0</div>
+                            <div class="data-label">MIL Time (s)</div>
+                        </div>
+                        <div class="data-card">
+                            <div class="data-value" id="timeSinceCodesCleared">0</div>
+                            <div class="data-label">Clear Time (s)</div>
+                        </div>
+                        <div class="data-card">
+                            <div class="data-value" id="maxEquivRatio">0</div>
+                            <div class="data-label">Max Equiv Ratio</div>
+                        </div>
+                        <div class="data-card">
+                            <div class="data-value" id="maxAirFlow">0</div>
+                            <div class="data-label">Max Air Flow (g/s)</div>
+                        </div>
+                        <div class="data-card">
+                            <div class="data-value" id="fuelType">0</div>
+                            <div class="data-label">Fuel Type</div>
+                        </div>
+                        <div class="data-card">
+                            <div class="data-value" id="ethanolFuel">0</div>
+                            <div class="data-label">Ethanol Fuel (%)</div>
+                        </div>
+                        <div class="data-card">
+                            <div class="data-value" id="absEvapPressure">0</div>
+                            <div class="data-label">Abs Evap Pressure (kPa)</div>
+                        </div>
+                        <div class="data-card">
+                            <div class="data-value" id="evapPressure">0</div>
+                            <div class="data-label">Evap Pressure (kPa)</div>
+                        </div>
+                        <div class="data-card">
+                            <div class="data-value" id="shortTermO2Trim1">0</div>
+                            <div class="data-label">ST O2 Trim 1 (%)</div>
+                        </div>
+                        <div class="data-card">
+                            <div class="data-value" id="longTermO2Trim1">0</div>
+                            <div class="data-label">LT O2 Trim 1 (%)</div>
+                        </div>
+                        <div class="data-card">
+                            <div class="data-value" id="shortTermO2Trim2">0</div>
+                            <div class="data-label">ST O2 Trim 2 (%)</div>
+                        </div>
+                        <div class="data-card">
+                            <div class="data-value" id="longTermO2Trim2">0</div>
+                            <div class="data-label">LT O2 Trim 2 (%)</div>
+                        </div>
+                        <div class="data-card">
+                            <div class="data-value" id="shortTermO2Trim3">0</div>
+                            <div class="data-label">ST O2 Trim 3 (%)</div>
+                        </div>
+                        <div class="data-card">
+                            <div class="data-value" id="longTermO2Trim3">0</div>
+                            <div class="data-label">LT O2 Trim 3 (%)</div>
+                        </div>
+                        <div class="data-card">
+                            <div class="data-value" id="shortTermO2Trim4">0</div>
+                            <div class="data-label">ST O2 Trim 4 (%)</div>
+                        </div>
+                        <div class="data-card">
+                            <div class="data-value" id="longTermO2Trim4">0</div>
+                            <div class="data-label">LT O2 Trim 4 (%)</div>
+                        </div>
+                        <div class="data-card">
+                            <div class="data-value" id="catalystTemp1">0</div>
+                            <div class="data-label">Catalyst Temp 1 (°C)</div>
+                        </div>
+                        <div class="data-card">
+                            <div class="data-value" id="catalystTemp2">0</div>
+                            <div class="data-label">Catalyst Temp 2 (°C)</div>
+                        </div>
+                        <div class="data-card">
+                            <div class="data-value" id="catalystTemp3">0</div>
+                            <div class="data-label">Catalyst Temp 3 (°C)</div>
+                        </div>
+                        <div class="data-card">
+                            <div class="data-value" id="catalystTemp4">0</div>
+                            <div class="data-label">Catalyst Temp 4 (°C)</div>
+                        </div>
+                        <div class="data-card">
+                            <div class="data-value" id="fuelPressure">0</div>
+                            <div class="data-label">Fuel Pressure (kPa)</div>
+                        </div>
+                        <div class="data-card">
+                            <div class="data-value" id="shortTermFuelTrim1">0</div>
+                            <div class="data-label">ST Fuel Trim 1 (%)</div>
+                        </div>
+                        <div class="data-card">
+                            <div class="data-value" id="longTermFuelTrim1">0</div>
+                            <div class="data-label">LT Fuel Trim 1 (%)</div>
+                        </div>
+                        <div class="data-card">
+                            <div class="data-value" id="shortTermFuelTrim2">0</div>
+                            <div class="data-label">ST Fuel Trim 2 (%)</div>
+                        </div>
+                        <div class="data-card">
+                            <div class="data-value" id="longTermFuelTrim2">0</div>
+                            <div class="data-label">LT Fuel Trim 2 (%)</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- DTC Section -->
+                <div class="live-data-section">
+                    <div class="section-header">
+                        <h2>DTC</h2>
+                        <div class="connection-info" id="milStatus">MIL: unknown</div>
+                        <div>
+                            <button id="btnDtcStored" class="btn btn-small">Stored</button>
+                            <button id="btnDtcPending" class="btn btn-small">Pending</button>
+                            <button id="btnDtcPermanent" class="btn btn-small">Permanent</button>
+                            <button id="btnDtcRandom" class="btn btn-small btn-warning">
+                                <i class="fas fa-bug"></i>
+                                Random
+                            </button>
+                            <button id="btnDtcClear" class="btn btn-small btn-danger">Clear</button>
+                        </div>
+                    </div>
+                    <div id="dtcList" class="live-data-grid" style="max-height:160px; overflow:auto; padding:8px 4px;">
+                        <div class="data-card">Chưa tải dữ liệu DTC.</div>
+                    </div>
+                </div>
+
+                <!-- Freeze Frame Section -->
+                <div class="live-data-section">
+                    <div class="section-header">
+                        <h2>Freeze Frame</h2>
+                        <div>
+                            <button id="btnFfCapture" class="btn btn-small">Capture</button>
+                            <button id="btnFfClear" class="btn btn-small btn-danger">Clear</button>
+                            <button id="btnFfRefresh" class="btn btn-small">Refresh</button>
+                        </div>
+                    </div>
+                    <div id="ffGrid" class="live-data-grid" style="max-height:160px; overflow:auto; padding:8px 4px;">
+                        <div class="data-card">No snapshot</div>
+                    </div>
+                </div>
+
+                <!-- Mode 06 Section -->
+                <div class="live-data-section">
+                    <div class="section-header">
+                        <h2>Mode 06 (Monitoring)</h2>
+                        <div>
+                            <button id="btnM6Refresh" class="btn btn-small">Refresh</button>
+                        </div>
+                    </div>
+                    <div id="m6Grid" class="live-data-grid" style="max-height:200px; overflow:auto; padding:8px 4px;">
+                        <div class="data-card">No tests</div>
                     </div>
                 </div>
 

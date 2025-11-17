@@ -286,6 +286,16 @@ body {
     transform: translateY(-2px);
 }
 
+.btn-warning {
+    background: #f39c12;
+    color: #2d3436;
+}
+
+.btn-warning:hover:not(:disabled) {
+    background: #d68910;
+    transform: translateY(-2px);
+}
+
 .btn-secondary {
     background: #6c757d;
     color: white;
@@ -359,6 +369,20 @@ body {
     display: grid;
     grid-template-columns: 1fr 1fr 1fr;
     gap: 12px;
+}
+
+/* Default: live data dạng cuộn */
+.live-data-grid {
+    max-height: 360px;
+    overflow-y: auto;
+    padding-right: 6px; /* chừa chỗ cho scrollbar */
+}
+
+/* Chế độ hiển thị full (không cuộn) */
+.live-data-section.full .live-data-grid {
+    max-height: none;
+    overflow: visible;
+    padding-right: 0;
 }
 
 .data-card {

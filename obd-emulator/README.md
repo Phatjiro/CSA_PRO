@@ -157,22 +157,127 @@ obd-elm327-emulator/
     └── script.js         # Client-side JavaScript
 ```
 
+## 🧪 Testing
+
+### Quick Test với Script
+Chạy test script để kiểm tra emulator:
+```bash
+node test-emulator.js
+```
+
+Script sẽ test các PIDs quan trọng:
+- ✅ Engine RPM (010C)
+- ✅ Vehicle Speed (010D)
+- ✅ Coolant Temperature (0105)
+- ✅ Intake Air Temperature (010F)
+- ✅ Throttle Position (0111)
+
+### Manual Test với Telnet
+```bash
+telnet localhost 35000
+
+# Gửi lệnh:
+ATZ
+010D
+0105
+010C
+
+# Response mong đợi:
+> ELM327 v1.2
+> 410D3C     (Speed = 60 km/h)
+> 41057D     (Coolant = 85°C)
+> 410C1F40   (RPM = 2000 rpm)
+```
+
+### Test với Flutter App
+1. Start emulator: `node server.js`
+2. Mở Web UI: `http://localhost:3000`
+3. Click **"Start Server"**
+4. Trong Flutter app:
+   - Settings → TCP/IP Connection
+   - Host: `192.168.1.76` (hoặc IP máy chạy emulator)
+   - Port: `35000`
+   - Click **Connect**
+5. Vào Dashboard → xem Speed, Coolant Temp, RPM
+
 ## Troubleshooting
 
-### Server không khởi động được
-- Kiểm tra port có bị sử dụng bởi ứng dụng khác không
-- Thử đổi port khác (ví dụ: 35001, 35002)
-- Kiểm tra firewall settings
+### ❌ Vấn đề: Speed và Coolant Temperature không hiển thị
 
-### Car Scanner không kết nối được
-- Đảm bảo IP address đúng
-- Kiểm tra port có mở không
-- Thử kết nối từ cùng mạng LAN
+**Đã sửa các lỗi sau (v1.1.0):**
+1. ✅ Emulator không xử lý đúng command có khoảng trắng
+2. ✅ Logic spaces setting bị sai (thêm spaces duplicate)
 
-### Dữ liệu không hiển thị
-- Kiểm tra log để xem có lỗi gì không
-- Đảm bảo Car Scanner app gửi đúng format OBD commands
-- Kiểm tra toggle settings có phù hợp không
+**Kiểm tra:**
+```bash
+# 1. Chạy test script
+node test-emulator.js
+
+# 2. Xem debug log trong console
+# Phải thấy: "PID 010D → 410D3C"
+```
+
+**Debug trong Flutter app:**
+Thêm log vào `obd_client.dart` (dòng 385):
+```dart
+if (['010C', '010D', '0105'].contains(pid)) {
+  print('PID $pid → "$response"');
+}
+```
+
+Xem thêm: [DEBUG_GUIDE.md](./DEBUG_GUIDE.md)
+
+### ❌ Server không khởi động được
+- Kiểm tra port có bị sử dụng: `netstat -an | grep 35000`
+- Thử đổi port khác: Edit `emulatorConfig.port` trong `server.js`
+- Kiểm tra firewall: `sudo ufw allow 35000/tcp` (Linux)
+
+### ❌ Car Scanner không kết nối được
+- **IP sai**: Kiểm tra IP máy chạy emulator: `ipconfig` (Windows) hoặc `ifconfig` (Linux/Mac)
+- **Port bị block**: Tạm tắt firewall để test
+- **Khác mạng**: Đảm bảo điện thoại và máy tính cùng mạng Wi-Fi
+
+### ❌ Live data không cập nhật
+**Nguyên nhân:**
+- Emulator chưa start (click "Start Server" trong Web UI)
+- Không có client kết nối (app chưa connect)
+
+**Kiểm tra:**
+```javascript
+// Trong server.js dòng 573:
+if (emulatorConfig.isRunning && connectedClients.length > 0) {
+  // Live data chỉ cập nhật khi cả 2 điều kiện này = true
+}
+```
+
+**Fix:**
+1. Mở Web UI: `http://localhost:3000`
+2. Click "Start Server" (status phải chuyển sang xanh)
+3. Connect app vào emulator
+4. Xem tab "Live Data" trong Web UI → giá trị phải đang thay đổi
+
+### ❌ Response format sai
+**Vấn đề:** App gửi `ATS0` (spaces off) nhưng emulator vẫn trả về có spaces
+
+**Fix:** Đã sửa trong v1.1.0 - khi `spaces=false`, emulator sẽ loại bỏ tất cả spaces khỏi response
+
+**Test:**
+```bash
+telnet localhost 35000
+ATS0        # spaces off
+010D        # request speed
+
+# Response: 410D3C (không có spaces)
+# Trước đây: 41 0D 3C (có spaces - sai!)
+```
+
+### 📋 Checklist khi gặp lỗi:
+- [ ] Emulator đang chạy (`node server.js`)
+- [ ] Server đã start (click "Start Server" trong Web UI)
+- [ ] App đã connect vào emulator
+- [ ] Live data đang cập nhật (xem Web UI tab "Live Data")
+- [ ] Test script pass (`node test-emulator.js`)
+- [ ] Debug log có hiển thị response đúng
 
 ## Đóng góp
 

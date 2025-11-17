@@ -32,6 +32,10 @@ const elements = {
     ecuMinus: document.getElementById('ecuMinus'),
     ecuPlus: document.getElementById('ecuPlus'),
     clearLogBtn: document.getElementById('clearLogBtn'),
+    toggleLiveDataViewBtn: document.getElementById('toggleLiveDataViewBtn'),
+    // Live mode toggle
+    liveModeToggle: document.getElementById('liveModeToggle'),
+    accelerationToggle: document.getElementById('accelerationToggle'),
     
     // Live data
     connectedClients: document.getElementById('connectedClients'),
@@ -41,6 +45,55 @@ const elements = {
     intakeTemp: document.getElementById('intakeTemp'),
     throttlePosition: document.getElementById('throttlePosition'),
     fuelLevel: document.getElementById('fuelLevel'),
+    engineLoad: document.getElementById('engineLoad'),
+    map: document.getElementById('map'),
+    baro: document.getElementById('baro'),
+    maf: document.getElementById('maf'),
+    voltage: document.getElementById('voltage'),
+    ambient: document.getElementById('ambient'),
+    lambda: document.getElementById('lambda'),
+    fuelSystemStatus: document.getElementById('fuelSystemStatus'),
+    timingAdvance: document.getElementById('timingAdvance'),
+    runtimeSinceStart: document.getElementById('runtimeSinceStart'),
+    distanceWithMIL: document.getElementById('distanceWithMIL'),
+    commandedPurge: document.getElementById('commandedPurge'),
+    warmupsSinceClear: document.getElementById('warmupsSinceClear'),
+    distanceSinceClear: document.getElementById('distanceSinceClear'),
+    catalystTemp: document.getElementById('catalystTemp'),
+    absoluteLoad: document.getElementById('absoluteLoad'),
+    commandedEquivRatio: document.getElementById('commandedEquivRatio'),
+    relativeThrottle: document.getElementById('relativeThrottle'),
+    absoluteThrottleB: document.getElementById('absoluteThrottleB'),
+    absoluteThrottleC: document.getElementById('absoluteThrottleC'),
+    pedalPositionD: document.getElementById('pedalPositionD'),
+    pedalPositionE: document.getElementById('pedalPositionE'),
+    pedalPositionF: document.getElementById('pedalPositionF'),
+    commandedThrottleActuator: document.getElementById('commandedThrottleActuator'),
+    timeRunWithMIL: document.getElementById('timeRunWithMIL'),
+    timeSinceCodesCleared: document.getElementById('timeSinceCodesCleared'),
+    maxEquivRatio: document.getElementById('maxEquivRatio'),
+    maxAirFlow: document.getElementById('maxAirFlow'),
+    fuelType: document.getElementById('fuelType'),
+    ethanolFuel: document.getElementById('ethanolFuel'),
+    absEvapPressure: document.getElementById('absEvapPressure'),
+    evapPressure: document.getElementById('evapPressure'),
+    shortTermO2Trim1: document.getElementById('shortTermO2Trim1'),
+    longTermO2Trim1: document.getElementById('longTermO2Trim1'),
+    shortTermO2Trim2: document.getElementById('shortTermO2Trim2'),
+    longTermO2Trim2: document.getElementById('longTermO2Trim2'),
+    shortTermO2Trim3: document.getElementById('shortTermO2Trim3'),
+    longTermO2Trim3: document.getElementById('longTermO2Trim3'),
+    shortTermO2Trim4: document.getElementById('shortTermO2Trim4'),
+    longTermO2Trim4: document.getElementById('longTermO2Trim4'),
+    catalystTemp1: document.getElementById('catalystTemp1'),
+    catalystTemp2: document.getElementById('catalystTemp2'),
+    catalystTemp3: document.getElementById('catalystTemp3'),
+    catalystTemp4: document.getElementById('catalystTemp4'),
+    fuelPressure: document.getElementById('fuelPressure'),
+    shortTermFuelTrim1: document.getElementById('shortTermFuelTrim1'),
+    longTermFuelTrim1: document.getElementById('longTermFuelTrim1'),
+    shortTermFuelTrim2: document.getElementById('shortTermFuelTrim2'),
+    longTermFuelTrim2: document.getElementById('longTermFuelTrim2'),
     
     // Progress bars
     rpmBar: document.getElementById('rpmBar'),
@@ -51,7 +104,31 @@ const elements = {
     fuelBar: document.getElementById('fuelBar'),
     
     // Log
-    logContainer: document.getElementById('logContainer')
+    logContainer: document.getElementById('logContainer'),
+    liveDataSection: document.querySelector('.live-data-section'),
+    liveDataGrid: document.getElementById('liveDataGrid')
+};
+
+const dtcEls = {
+  btnStored: document.getElementById('btnDtcStored'),
+  btnPending: document.getElementById('btnDtcPending'),
+  btnPermanent: document.getElementById('btnDtcPermanent'),
+  btnRandom: document.getElementById('btnDtcRandom'),
+  btnClear: document.getElementById('btnDtcClear'),
+  list: document.getElementById('dtcList'),
+  mil: document.getElementById('milStatus'),
+};
+
+const ffEls = {
+  btnCapture: document.getElementById('btnFfCapture'),
+  btnClear: document.getElementById('btnFfClear'),
+  btnRefresh: document.getElementById('btnFfRefresh'),
+  grid: document.getElementById('ffGrid'),
+};
+
+const m6Els = {
+  btnRefresh: document.getElementById('btnM6Refresh'),
+  grid: document.getElementById('m6Grid'),
 };
 
 // Current configuration
@@ -64,7 +141,35 @@ document.addEventListener('DOMContentLoaded', function() {
     
     loadConfiguration();
     setupEventListeners();
-    
+    initLiveDataViewMode();
+    initLiveModeFromServer();
+
+    // DTC buttons
+    if (dtcEls.btnStored) dtcEls.btnStored.addEventListener('click', () => loadDtc('stored'));
+    if (dtcEls.btnPending) dtcEls.btnPending.addEventListener('click', () => loadDtc('pending'));
+    if (dtcEls.btnPermanent) dtcEls.btnPermanent.addEventListener('click', () => loadDtc('permanent'));
+    if (dtcEls.btnRandom) dtcEls.btnRandom.addEventListener('click', () => randomDtc());
+    if (dtcEls.btnClear) dtcEls.btnClear.addEventListener('click', () => clearDtc());
+
+    // Freeze Frame buttons
+    if (ffEls.btnCapture) ffEls.btnCapture.addEventListener('click', () => captureFreezeFrame());
+    if (ffEls.btnClear) ffEls.btnClear.addEventListener('click', () => clearFreezeFrame());
+    if (ffEls.btnRefresh) ffEls.btnRefresh.addEventListener('click', () => loadFreezeFrame());
+
+    // Mode 06
+    if (m6Els.btnRefresh) m6Els.btnRefresh.addEventListener('click', () => loadMode06());
+
+    // Auto load stored on start
+    setTimeout(() => loadDtc('stored'), 300);
+    setTimeout(() => loadFreezeFrame(), 600);
+    setTimeout(() => loadMode06(), 900);
+
+    // Socket events
+    socket.on('dtcCleared', () => {
+        addLogEntry('INFO', 'DTC cleared');
+        loadDtc('stored');
+    });
+
     // Request current configuration from server
     fetch('/api/config')
         .then(response => response.json())
@@ -81,7 +186,7 @@ document.addEventListener('DOMContentLoaded', function() {
 // Update time display
 function updateTime() {
     const now = new Date();
-    const timeString = now.toLocaleTimeString('vi-VN', { 
+    const timeString = now.toLocaleTimeString('en-US', { 
         hour: '2-digit', 
         minute: '2-digit',
         hour12: false 
@@ -155,6 +260,41 @@ function updateUI() {
     updateStatus(currentConfig.isRunning);
 }
 
+// Init live mode from server
+function initLiveModeFromServer() {
+    fetch('/api/live')
+        .then(r => r.json())
+        .then(data => {
+            const mode = (data && data.mode) || 'random';
+            applyLiveModeToUI(mode);
+        })
+        .catch(() => {});
+}
+
+function applyLiveModeToUI(mode) {
+    if (!elements.liveModeToggle) return;
+    elements.liveModeToggle.checked = mode !== 'static';
+}
+
+function setLiveMode(mode) {
+    fetch('/api/live/mode', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mode })
+    })
+    .then(r => r.json())
+    .then(res => {
+        if (res && res.success) {
+            addLogEntry('INFO', `Live mode set to ${mode}`);
+        } else {
+            addLogEntry('ERROR', 'Failed to set live mode');
+        }
+    })
+    .catch(err => {
+        addLogEntry('ERROR', 'Failed to set live mode: ' + err.message);
+    });
+}
+
 // Setup event listeners
 function setupEventListeners() {
     // Control buttons
@@ -162,6 +302,11 @@ function setupEventListeners() {
     elements.stopBtn.addEventListener('click', stopServer);
     elements.resetBtn.addEventListener('click', resetConfiguration);
     elements.clearLogBtn.addEventListener('click', clearLog);
+    
+    // Toggle live data view
+    if (elements.toggleLiveDataViewBtn) {
+        elements.toggleLiveDataViewBtn.addEventListener('click', toggleLiveDataViewMode);
+    }
     
     // ECU count controls
     elements.ecuMinus.addEventListener('click', () => {
@@ -200,6 +345,66 @@ function setupEventListeners() {
     toggles.forEach(toggle => {
         toggle.addEventListener('change', saveConfiguration);
     });
+
+    // Live mode toggle change
+    if (elements.liveModeToggle) {
+        elements.liveModeToggle.addEventListener('change', () => {
+            const mode = elements.liveModeToggle.checked ? 'random' : 'static';
+            setLiveMode(mode);
+        });
+    }
+    
+    // Acceleration toggle
+    if (elements.accelerationToggle) {
+        elements.accelerationToggle.addEventListener('change', () => {
+            if (elements.accelerationToggle.checked) {
+                // Start acceleration test: 0-200 km/h in 20s
+                fetch('/api/acceleration/start', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ startSpeed: 0, endSpeed: 200, duration: 20000 })
+                })
+                .then(res => res.json())
+                .then(data => console.log('Acceleration started:', data))
+                .catch(err => {
+                    console.error('Failed to start acceleration:', err);
+                    elements.accelerationToggle.checked = false;
+                });
+            } else {
+                // Stop acceleration
+                fetch('/api/acceleration/stop', { method: 'POST' })
+                    .then(res => res.json())
+                    .then(data => console.log('Acceleration stopped:', data))
+                    .catch(err => console.error('Failed to stop acceleration:', err));
+            }
+        });
+    }
+}
+
+// Live Data view mode (scroll/full)
+function initLiveDataViewMode() {
+    const mode = localStorage.getItem('liveDataViewMode') || 'scroll';
+    applyLiveDataViewMode(mode);
+}
+
+function toggleLiveDataViewMode() {
+    const current = localStorage.getItem('liveDataViewMode') || 'scroll';
+    const next = current === 'scroll' ? 'full' : 'scroll';
+    localStorage.setItem('liveDataViewMode', next);
+    applyLiveDataViewMode(next);
+}
+
+function applyLiveDataViewMode(mode) {
+    if (!elements.liveDataSection || !elements.toggleLiveDataViewBtn) return;
+    if (mode === 'full') {
+        elements.liveDataSection.classList.add('full');
+        elements.toggleLiveDataViewBtn.innerHTML = '<i class="fas fa-compress"></i> Collapse';
+        elements.toggleLiveDataViewBtn.title = 'Collapse to scroll mode';
+    } else {
+        elements.liveDataSection.classList.remove('full');
+        elements.toggleLiveDataViewBtn.innerHTML = '<i class="fas fa-expand"></i> Show full';
+        elements.toggleLiveDataViewBtn.title = 'Show all';
+    }
 }
 
 // Start server
@@ -292,12 +497,64 @@ function updateStatus(isRunning) {
 // Update live data
 function updateLiveData(data) {
     // Update values with animation
+    // Core metrics
     updateDataValue(elements.engineRPM, data.engineRPM);
     updateDataValue(elements.vehicleSpeed, data.vehicleSpeed);
     updateDataValue(elements.coolantTemp, data.coolantTemp);
     updateDataValue(elements.intakeTemp, data.intakeTemp);
     updateDataValue(elements.throttlePosition, data.throttlePosition);
     updateDataValue(elements.fuelLevel, data.fuelLevel);
+    updateDataValue(elements.engineLoad, data.engineLoad ?? 0);
+    updateDataValue(elements.map, data.map ?? 0);
+    updateDataValue(elements.baro, data.baro ?? 0);
+    updateDataValue(elements.maf, data.maf ?? 0);
+    updateDataValue(elements.voltage, data.voltage ?? 0);
+    updateDataValue(elements.ambient, data.ambient ?? 0);
+    updateDataValue(elements.lambda, data.lambda ?? 0);
+    
+    // Additional metrics
+    updateDataValue(elements.fuelSystemStatus, data.fuelSystemStatus ?? 0);
+    updateDataValue(elements.timingAdvance, data.timingAdvance ?? 0);
+    updateDataValue(elements.runtimeSinceStart, data.runtimeSinceStart ?? 0);
+    updateDataValue(elements.distanceWithMIL, data.distanceWithMIL ?? 0);
+    updateDataValue(elements.commandedPurge, data.commandedPurge ?? 0);
+    updateDataValue(elements.warmupsSinceClear, data.warmupsSinceClear ?? 0);
+    updateDataValue(elements.distanceSinceClear, data.distanceSinceClear ?? 0);
+    updateDataValue(elements.catalystTemp, data.catalystTemp ?? 0);
+    updateDataValue(elements.absoluteLoad, data.absoluteLoad ?? 0);
+    updateDataValue(elements.commandedEquivRatio, data.commandedEquivRatio ?? 0);
+    updateDataValue(elements.relativeThrottle, data.relativeThrottle ?? 0);
+    updateDataValue(elements.absoluteThrottleB, data.absoluteThrottleB ?? 0);
+    updateDataValue(elements.absoluteThrottleC, data.absoluteThrottleC ?? 0);
+    updateDataValue(elements.pedalPositionD, data.pedalPositionD ?? 0);
+    updateDataValue(elements.pedalPositionE, data.pedalPositionE ?? 0);
+    updateDataValue(elements.pedalPositionF, data.pedalPositionF ?? 0);
+    updateDataValue(elements.commandedThrottleActuator, data.commandedThrottleActuator ?? 0);
+    updateDataValue(elements.timeRunWithMIL, data.timeRunWithMIL ?? 0);
+    updateDataValue(elements.timeSinceCodesCleared, data.timeSinceCodesCleared ?? 0);
+    updateDataValue(elements.maxEquivRatio, data.maxEquivRatio ?? 0);
+    updateDataValue(elements.maxAirFlow, data.maxAirFlow ?? 0);
+    updateDataValue(elements.fuelType, data.fuelType ?? 0);
+    updateDataValue(elements.ethanolFuel, data.ethanolFuel ?? 0);
+    updateDataValue(elements.absEvapPressure, data.absEvapPressure ?? 0);
+    updateDataValue(elements.evapPressure, data.evapPressure ?? 0);
+    updateDataValue(elements.shortTermO2Trim1, data.shortTermO2Trim1 ?? 0);
+    updateDataValue(elements.longTermO2Trim1, data.longTermO2Trim1 ?? 0);
+    updateDataValue(elements.shortTermO2Trim2, data.shortTermO2Trim2 ?? 0);
+    updateDataValue(elements.longTermO2Trim2, data.longTermO2Trim2 ?? 0);
+    updateDataValue(elements.shortTermO2Trim3, data.shortTermO2Trim3 ?? 0);
+    updateDataValue(elements.longTermO2Trim3, data.longTermO2Trim3 ?? 0);
+    updateDataValue(elements.shortTermO2Trim4, data.shortTermO2Trim4 ?? 0);
+    updateDataValue(elements.longTermO2Trim4, data.longTermO2Trim4 ?? 0);
+    updateDataValue(elements.catalystTemp1, data.catalystTemp1 ?? 0);
+    updateDataValue(elements.catalystTemp2, data.catalystTemp2 ?? 0);
+    updateDataValue(elements.catalystTemp3, data.catalystTemp3 ?? 0);
+    updateDataValue(elements.catalystTemp4, data.catalystTemp4 ?? 0);
+    updateDataValue(elements.fuelPressure, data.fuelPressure ?? 0);
+    updateDataValue(elements.shortTermFuelTrim1, data.shortTermFuelTrim1 ?? 0);
+    updateDataValue(elements.longTermFuelTrim1, data.longTermFuelTrim1 ?? 0);
+    updateDataValue(elements.shortTermFuelTrim2, data.shortTermFuelTrim2 ?? 0);
+    updateDataValue(elements.longTermFuelTrim2, data.longTermFuelTrim2 ?? 0);
     
     // Update progress bars
     updateProgressBar(elements.rpmBar, data.engineRPM, 0, 8000);
@@ -319,6 +576,7 @@ function updateDataValue(element, value) {
 
 // Update progress bar
 function updateProgressBar(element, value, min, max) {
+    if (!element) return;
     const percentage = Math.min(100, Math.max(0, ((value - min) / (max - min)) * 100));
     element.style.width = percentage + '%';
 }
@@ -414,3 +672,175 @@ window.addEventListener('unhandledrejection', (event) => {
 setInterval(() => {
     saveConfiguration();
 }, 5000);
+
+function loadDtc(type) {
+  fetch(`/api/dtc/${type}`)
+    .then(r => r.json())
+    .then(data => {
+      renderDtc(data);
+    })
+    .catch(() => {
+      renderDtc({ codes: [], milOn: false, type });
+    });
+}
+
+function clearDtc() {
+  fetch('/api/dtc/clear', { method: 'POST' })
+    .then(r => r.json())
+    .then(() => loadDtc('stored'))
+    .catch(() => {});
+}
+
+function randomDtc() {
+  fetch('/api/dtc/random', { method: 'POST' })
+    .then(r => r.json())
+    .then(res => {
+      if (res && res.success) {
+        const codes = Array.isArray(res.codes) ? res.codes.join(', ') : 'P****';
+        addLogEntry('INFO', `Random DTCs injected: ${codes}`);
+        loadDtc('stored');
+        loadFreezeFrame();
+      } else {
+        addLogEntry('ERROR', 'Failed to inject random DTC');
+      }
+    })
+    .catch(err => addLogEntry('ERROR', 'Failed to inject random DTC: ' + err.message));
+}
+
+function renderDtc(data) {
+  if (!dtcEls.list) return;
+  const codes = data?.codes || [];
+  const type = data?.type || 'stored';
+  const milOn = !!data?.milOn;
+  if (dtcEls.mil) dtcEls.mil.textContent = `MIL: ${milOn ? 'ON' : 'OFF'}`;
+
+  if (codes.length === 0) {
+    dtcEls.list.innerHTML = '<div class="data-card">NO DATA</div>';
+    return;
+  }
+  const items = codes.map(c => `<div class="data-card"><div class="data-value" style="font-size:1rem;">${c}</div><div class="data-label">${type}</div></div>`).join('');
+  dtcEls.list.innerHTML = items;
+}
+
+function loadFreezeFrame() {
+  fetch('/api/freeze-frame')
+    .then(r => r.json())
+    .then(data => renderFreezeFrame(data?.snapshot || null))
+    .catch(() => renderFreezeFrame(null));
+}
+
+function captureFreezeFrame() {
+  fetch('/api/freeze-frame/capture', { method: 'POST' })
+    .then(r => r.json())
+    .then(() => loadFreezeFrame())
+    .catch(() => {});
+}
+
+function clearFreezeFrame() {
+  fetch('/api/freeze-frame/clear', { method: 'POST' })
+    .then(r => r.json())
+    .then(() => loadFreezeFrame())
+    .catch(() => {});
+}
+
+function renderFreezeFrame(snapshot) {
+  if (!ffEls.grid) return;
+  if (!snapshot) {
+    ffEls.grid.innerHTML = '<div class="data-card">No snapshot</div>';
+    return;
+  }
+  // Display selected PIDs in a compact way
+  const order = ['010C','010D','0105','010F','0110','0111'];
+  const items = order
+    .filter(pid => snapshot[pid])
+    .map(pid => {
+      const enc = (snapshot[pid] || '').toString();
+      const parsed = parseFreezeFrameValue(pid, enc);
+      const label = parsed.label;
+      const display = parsed.value != null ? `${parsed.value}${parsed.unit || ''}` : enc;
+      return `<div class=\"data-card\"><div class=\"data-value\" style=\"font-size:1.1rem;\">${display}</div><div class=\"data-label\">${label}</div></div>`;
+    })
+    .join('');
+  ffEls.grid.innerHTML = items || '<div class="data-card">No snapshot</div>';
+}
+
+// Parse Mode 01-encoded strings like '41 0C AA BB' into numeric values
+function parseFreezeFrameValue(pid, encoded) {
+  const cleaned = (encoded || '').replace(/\s+/g, '').toUpperCase();
+  const key = '41' + pid.substring(2);
+  const labelMap = { '010C':'RPM', '010D':'Speed', '0105':'ECT', '010F':'IAT', '0110':'MAF', '0111':'Throttle' };
+  const result = { label: labelMap[pid] || pid, value: null, unit: '' };
+  const idx = cleaned.indexOf(key);
+  if (idx < 0) return result;
+  try {
+    switch (pid) {
+      case '010C': { // RPM = ((256*A)+B)/4
+        const a = parseInt(cleaned.substring(idx+4, idx+6), 16);
+        const b = parseInt(cleaned.substring(idx+6, idx+8), 16);
+        result.value = Math.round(((256*a)+b)/4);
+        result.unit = ' rpm';
+        break;
+      }
+      case '010D': { // Speed = A
+        const a = parseInt(cleaned.substring(idx+4, idx+6), 16);
+        result.value = a;
+        result.unit = ' km/h';
+        break;
+      }
+      case '0105': { // Coolant = A-40
+        const a = parseInt(cleaned.substring(idx+4, idx+6), 16);
+        result.value = a - 40;
+        result.unit = ' °C';
+        break;
+      }
+      case '010F': { // IAT = A-40
+        const a = parseInt(cleaned.substring(idx+4, idx+6), 16);
+        result.value = a - 40;
+        result.unit = ' °C';
+        break;
+      }
+      case '0110': { // MAF = ((256*A)+B)/100
+        const a = parseInt(cleaned.substring(idx+4, idx+6), 16);
+        const b = parseInt(cleaned.substring(idx+6, idx+8), 16);
+        result.value = Math.round(((256*a)+b)/100);
+        result.unit = ' g/s';
+        break;
+      }
+      case '0111': { // Throttle % = 100*A/255
+        const a = parseInt(cleaned.substring(idx+4, idx+6), 16);
+        result.value = Math.round((a*100)/255);
+        result.unit = ' %';
+        break;
+      }
+    }
+  } catch (e) { /* ignore, fallback to hex */ }
+  return result;
+}
+
+function loadMode06() {
+  fetch('/api/mode06')
+    .then(r => r.json())
+    .then(d => renderMode06(d?.tests || []))
+    .catch(() => renderMode06([]));
+}
+
+function renderMode06(tests) {
+  if (!m6Els.grid) return;
+  if (!tests || tests.length === 0) {
+    m6Els.grid.innerHTML = '<div class="data-card">No tests</div>';
+    return;
+  }
+  const items = tests.map(t => {
+    const pass = !!t.pass;
+    const color = pass ? 'style=\"color:#4CAF50\"' : 'style=\"color:#FF5252\"';
+    const value = Number(t.value);
+    const min = Number(t.min);
+    const max = Number(t.max);
+    return `<div class=\"data-card\">
+      <div class=\"data-value\">${value}</div>
+      <div class=\"data-label\">${t.tid} - ${t.name}</div>
+      <div ${color}>${pass ? 'PASS' : 'FAIL'} (min ${min}, max ${max})</div>
+    </div>`;
+  }).join('');
+  m6Els.grid.innerHTML = items;
+}
