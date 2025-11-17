@@ -1,9 +1,6 @@
-# 🚗 OBD-II Complete Standard - App & Emulator Contract
+# OBD-II Protocol Reference
 
-## 📋 Purpose
-Unified reference for **OBD-II protocol** covering Mode 01 PIDs, DTCs (Mode 03/07/0A/04), Freeze Frame (Mode 02), and Mode 06 monitoring. Ensures consistency between Flutter app and Node.js emulator.
-
----
+Complete reference for OBD-II protocol covering Mode 01 PIDs, DTCs (Mode 03/07/0A/04), Freeze Frame (Mode 02), and Mode 06 monitoring. Ensures consistency between Flutter app and Node.js emulator.
 
 ## Mode 01 - Live Data PIDs
 
@@ -93,7 +90,7 @@ Complete list of Mode 01 PIDs following SAE J1979 standard.
 | `0159` | Fuel rail absolute pressure | ((A×256)+B)×10 | kPa | 0-655350 | - |
 | `015A` | Relative accelerator pedal position | A×100/255 | % | 0-100 | - |
 | `015B` | Hybrid battery pack remaining life | A×100/255 | % | 0-100 | - |
-| `015C` | **Engine oil temperature** ⚠️ | **A-40** | **°C** | **-40 to 215** | **IMPORTANT** |
+| `015C` | **Engine oil temperature** | **A-40** | **°C** | **-40 to 215** | **IMPORTANT** |
 | `015D` | Fuel injection timing | ((A×256)+B-26880)/128 | ° | -210 to 301.992 | - |
 | `015E` | Engine fuel rate | ((A×256)+B)×0.05 | L/h | 0-3212.75 | - |
 | `015F` | Emission requirements | A | code | - | - |
@@ -184,34 +181,51 @@ Snapshot of key PIDs when DTC is set.
 
 ---
 
-## Implementation Checklist
+## Sensor Overview
 
-### App (Flutter)
-- [x] **78 sensors** (69 PIDs + 9 calculated) - **v1.3.0 UPDATE**
-- [x] DTC read/clear (Mode 03/04)
-- [x] PID `015C` = Engine Oil Temp
-- [x] Async polling with smoothing
-- [x] Demo mode with random values
-- [x] Parser loại bỏ spaces để xử lý cả "410D40" và "41 0D 40"
-- [x] Debug logging cho PIDs quan trọng (010C, 010D, 0105)
-- [x] **v1.2.0 CRITICAL FIX**: Mutex serialization cho OBD requests (fix race condition)
-- [x] Force enable essential PIDs (010C, 010D, 0105)
-- [x] **v1.3.0 NEW**: Thêm 7 sensors (2 Catalyst Temp + 5 Fuel diagnostics)
+**Total: 78 sensors** (69 PIDs + 9 calculated)
 
-### Emulator (Node.js)
-- [x] **71 PIDs Mode 01** - **v1.2.0 UPDATE**
-- [x] DTC support
-- [x] Freeze frame
-- [x] Mode 06 basic
-- [x] **v1.1.0 FIX**: Command normalization (hỗ trợ cả "010D" và "01 0D")
-- [x] **v1.1.0 FIX**: Spaces setting logic (khi spaces=false → loại bỏ spaces)
-- [x] Test script (`test-emulator.js`) để verify PIDs
-- [x] Debug guide (`DEBUG_GUIDE.md`) với troubleshooting chi tiết
-- [x] **v1.2.0 NEW**: Thêm 3 Catalyst Temp PIDs (013D, 013E, 013F)
+### Categories
+
+| Category | Count | Description |
+|----------|-------|-------------|
+| 🏎️ **Engine** | 10 | RPM, Speed, Load, Timing, etc. |
+| 🌡️ **Temperature** | 8 | Coolant, Intake, Catalyst monitoring |
+| ⛽ **Fuel** | 12 | Level, Pressure, Fuel Trim, Lambda |
+| 💨 **Air** | 4 | MAF, MAP, Barometric Pressure |
+| 🎚️ **Throttle** | 8 | Position variations, Commanded |
+| 🔬 **Advanced** | 18 | O2 sensors, Voltage, EGR, etc. |
+| 📐 **O2 Sensors** | 8 | Bank 1/2, Sensor 1/2/3/4 |
+| 🧮 **Calculated** | 9 | HP, MPG, AFR, 0-100 time |
+| | **Total: 78** | |
+
+### Key Sensors (v1.3.0)
+
+#### Catalyst Temperature (4-Point Monitoring)
+- **013C**: Bank 1, Sensor 1 (upstream)
+- **013D**: Bank 2, Sensor 1 (upstream)
+- **013E**: Bank 1, Sensor 2 (downstream)
+- **013F**: Bank 2, Sensor 2 (downstream)
+
+**Normal Range**: 400-800°C  
+**Diagnostic**: Temperature drop across catalyst should be 50-150°C
+
+#### Fuel Diagnostics
+- **010A**: Fuel Pressure (0-765 kPa, normal: 300-500 kPa)
+- **0106**: Short Term Fuel Trim Bank 1 (-100% to +99.2%, normal: -10% to +10%)
+- **0107**: Long Term Fuel Trim Bank 1 (-100% to +99.2%, normal: -10% to +10%)
+- **0108**: Short Term Fuel Trim Bank 2
+- **0109**: Long Term Fuel Trim Bank 2
+
+**Diagnostic Guide**:
+- **STFT/LTFT > +15%**: LEAN condition (vacuum leak, low fuel pressure)
+- **STFT/LTFT < -15%**: RICH condition (dirty air filter, leaking injector)
+- **Bank mismatch > 10%**: Bank-specific issue
 
 ---
 
 ## References
+
 - **SAE J1979**: OBD-II standard
 - **Wikipedia**: [OBD-II PIDs](https://en.wikipedia.org/wiki/OBD-II_PIDs)
 - **ISO 15031**: Diagnostic connector standard

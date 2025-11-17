@@ -14,8 +14,6 @@ A comprehensive OBD-II car scanner solution with ELM327 emulator and Flutter mob
 
 See [CHANGELOG.md](CHANGELOG.md) for complete version history.
 
-📚 **[Documentation Index](DOCS_INDEX.md)** - Complete guide to all documentation
-
 ## Project Structure
 
 ```
@@ -25,7 +23,7 @@ CSA_PRO/
 └── README.md
 ```
 
-## Components
+## Quick Start
 
 ### OBD ELM327 Emulator
 
@@ -37,7 +35,6 @@ Node.js-based emulator that simulates ELM327 OBD-II adapters for development and
 - **71 PIDs Mode 01** (Live Data) + Modes 02, 03, 04, 06, 09
 - Real-time data streaming
 - REST API for configuration
-- Test script for validation
 
 **Quick Start:**
 ```bash
@@ -109,6 +106,11 @@ flutter run
 ✅ Emission readiness checking  
 ✅ Multi-vehicle management  
 ✅ Connection persistence across screens
+
+## Documentation
+
+- **[CHANGELOG.md](CHANGELOG.md)** - Version history and updates
+- **[OBD_REFERENCE.md](OBD_REFERENCE.md)** - Complete OBD-II protocol reference (PIDs, DTCs, formulas)
 
 ## License
 

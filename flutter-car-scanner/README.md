@@ -5,7 +5,7 @@ Cross-platform OBD-II car scanner application for vehicle diagnostics and monito
 ## Features
 
 ### Core Functionality
-- Real-time live data dashboard with gauges and charts
+- Real-time live data dashboard with gauges and charts - **78 Sensors**
 - Diagnostic trouble code (DTC) reading and clearing
 - Freeze frame analysis
 - MIL (Check Engine) status monitoring
@@ -62,8 +62,43 @@ lib/
 - ✅ macOS
 - ✅ Web
 
+## Development
+
+### iOS Build
+
+```bash
+cd ios
+pod install
+cd ..
+flutter build ios
+```
+
+**Requirements:**
+- Mac with Xcode
+- CocoaPods: `sudo gem install cocoapods`
+- Apple Developer Account (for device testing)
+
+**Configuration:**
+- Bundle ID: `com.kahastudio.obd2scanner`
+- Bluetooth permissions configured
+- App Transport Security configured (allows HTTP for OBD emulator)
+
+### Icon Setup
+
+1. Place `app_icon.png` (1024x1024 px) in `assets/icon/`
+2. Run: `flutter pub run flutter_launcher_icons`
+3. Rebuild: `flutter clean && flutter pub get && flutter run`
+
+See [SETUP_ICON.md](SETUP_ICON.md) for details.
+
 ## Notes
 
 - Connection is maintained across screen navigation
 - Only disconnects on user action or app termination
 - Demo mode works completely offline
+
+## Documentation
+
+- **[../README.md](../README.md)** - Project overview
+- **[../OBD_REFERENCE.md](../OBD_REFERENCE.md)** - Complete OBD-II protocol reference
+- **[../CHANGELOG.md](../CHANGELOG.md)** - Version history

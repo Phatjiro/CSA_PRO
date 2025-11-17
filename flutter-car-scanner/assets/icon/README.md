@@ -1,14 +1,14 @@
-# 📱 Icon App
+# App Icon
 
-## 📂 Đặt Icon Ở Đây
+## Place Icon Here
 
-**Đặt file icon 1024x1024 px vào đây với tên:**
+**Place icon file 1024x1024 px here with name:**
 - `app_icon.png` (1024x1024 px)
 
-## ✅ Sau Khi Đặt File
+## After Placing File
 
-1. Đặt file `app_icon.png` (1024x1024 px) vào thư mục này
-2. Chạy lệnh:
+1. Place `app_icon.png` (1024x1024 px) file in this directory
+2. Run commands:
    ```bash
    cd flutter-car-scanner
    flutter pub get
@@ -20,10 +20,9 @@
    flutter run
    ```
 
-## 📝 Lưu Ý
+## Notes
 
-- File phải là PNG format
-- Kích thước: 1024x1024 px
-- Nền trong suốt (transparent) hoặc solid color đều được
-- Package sẽ tự động generate tất cả các kích thước cần thiết cho Android, iOS, và Web
-
+- File must be PNG format
+- Size: 1024x1024 px
+- Transparent or solid background both work
+- Package will automatically generate all required sizes for Android, iOS, and Web
