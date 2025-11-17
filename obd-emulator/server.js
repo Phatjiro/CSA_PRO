@@ -322,7 +322,18 @@ const obdPids = {
   '015D': '41 5D 69 00', // Fuel injection timing: 0° (26880-26880)/128
   '015E': '41 5E 80 00 00 00', // Engine fuel rate: 0 L/h (lambda=1.00)
   '015F': '41 5F 01', // Emission requirements: OBD-II (CARB)
-  '0160': '41 60 00 00 00 00', // PIDs supported [61-80] - bitmap
+  // Extended PIDs bitmap support
+  // 0120: PIDs supported [21-40] - bitmap with bits set for: 0121, 012E, 012F, 0130, 0131, 0133, 013C, 013D, 013E, 013F
+  // Bit positions: 0121=bit0, 012E=bit13, 012F=bit14, 0130=bit15, 0131=bit16, 0133=bit18, 013C=bit27, 013D=bit28, 013E=bit29, 013F=bit30
+  // Byte 1 (bits 0-7): 0x01 (bit0=0121), Byte 2 (bits 8-15): 0x60 (bits 13,14,15), Byte 3 (bits 16-23): 0x04 (bit18=0133), Byte 4 (bits 24-31): 0xF0 (bits 27,28,29,30)
+  '0120': '41 20 01 60 04 F0', // PIDs supported [21-40] - bitmap
+  // 0140: PIDs supported [41-60] - bitmap with bits set for: 0142, 0143, 0144, 0145, 0146, 0147, 0148, 0149, 014A, 014B, 014C, 014D, 014E, 014F, 0150, 0151, 0152, 0153, 0154, 0155, 0156, 0157, 0158, 0159, 015A, 015B, 015C, 015D, 015E, 015F
+  // Most PIDs in this range are supported, so set most bits
+  '0140': '41 40 FF FF FF FF', // PIDs supported [41-60] - bitmap (most supported)
+  // 0160: PIDs supported [61-80] - bitmap with bits set for: 0161, 0162, 0163
+  // Bit positions: 0161=bit0, 0162=bit1, 0163=bit2
+  // Byte 1 (bits 0-7): 0x07 (bits 0,1,2)
+  '0160': '41 60 07 00 00 00', // PIDs supported [61-80] - bitmap
   '0161': '41 61 8D', // Driver's demand engine torque: 16% (141-125=16)
   '0162': '41 62 8B', // Actual engine torque: 14% (139-125=14)
   '0163': '41 63 05 DC', // Engine reference torque: 1500 Nm (0x05DC=1500)

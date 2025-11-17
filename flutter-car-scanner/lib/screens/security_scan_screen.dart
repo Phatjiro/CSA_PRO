@@ -257,18 +257,32 @@ class _SecurityScanScreenState extends State<SecurityScanScreen> with SingleTick
 
 
   Future<void> _pickMake() async {
-    final makes = CarMakes.getAll();
-    final selected = await showDialog<String>(
-      context: context,
-      builder: (context) => _MakePickerDialog(
-        makes: makes,
-        selectedMake: _selectedMake,
+    final vehicle = ConnectionManager.instance.vehicle;
+    String? selectedMake = vehicle?.make ?? _selectedMake;
+    
+    final makeController = TextEditingController(text: selectedMake ?? '');
+
+    final result = await Navigator.of(context).push<String>(
+      MaterialPageRoute(
+        builder: (context) => _VehicleMakeScreen(
+          makeController: makeController,
+          onConfirm: (make) async {
+            // Update vehicle info and persist it
+            if (vehicle != null) {
+              final updatedVehicle = vehicle.copyWith(make: make);
+              await VehicleService.save(updatedVehicle);
+              ConnectionManager.instance.currentVehicle.value = updatedVehicle;
+            }
+            return make;
+          },
+        ),
+        fullscreenDialog: true,
       ),
     );
 
-    if (selected != null && selected.isNotEmpty && mounted) {
+    if (result != null && result.isNotEmpty && mounted) {
       setState(() {
-        _selectedMake = selected;
+        _selectedMake = result;
       });
     }
   }
@@ -429,7 +443,7 @@ class _SecurityScanScreenState extends State<SecurityScanScreen> with SingleTick
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
                   color: (_selectedMake != null && _selectedMake!.isNotEmpty)
-                      ? Colors.blueAccent.withValues(alpha: 0.3)
+                      ? const Color(0xFF9B59B6).withValues(alpha: 0.3)
                       : Colors.orangeAccent.withValues(alpha: 0.3),
                   width: 1,
                 ),
@@ -439,7 +453,7 @@ class _SecurityScanScreenState extends State<SecurityScanScreen> with SingleTick
                   Icon(
                     Icons.directions_car_filled,
                     color: (_selectedMake != null && _selectedMake!.isNotEmpty)
-                        ? Colors.blueAccent
+                        ? const Color(0xFF9B59B6)
                         : Colors.orangeAccent,
                     size: 24,
                   ),
@@ -471,7 +485,7 @@ class _SecurityScanScreenState extends State<SecurityScanScreen> with SingleTick
                     icon: const Icon(Icons.search, size: 16),
                     label: Text((_selectedMake != null && _selectedMake!.isNotEmpty) ? 'Change' : 'Select'),
                     style: TextButton.styleFrom(
-                      foregroundColor: Colors.blueAccent,
+                      foregroundColor: const Color(0xFF9B59B6),
                     ),
                   ),
                 ],
@@ -1375,115 +1389,222 @@ class _ScanStep {
   _ScanStep(this.title, this.description, this.icon, this.color);
 }
 
-// Dialog with search bar for selecting vehicle make
-class _MakePickerDialog extends StatefulWidget {
-  final List<String> makes;
-  final String? selectedMake;
+// Full screen dialog for selecting vehicle make (same as Vehicle-Specific Data)
+class _VehicleMakeScreen extends StatefulWidget {
+  final TextEditingController makeController;
+  final Future<String> Function(String) onConfirm;
 
-  const _MakePickerDialog({
-    required this.makes,
-    this.selectedMake,
+  const _VehicleMakeScreen({
+    required this.makeController,
+    required this.onConfirm,
   });
 
   @override
-  State<_MakePickerDialog> createState() => _MakePickerDialogState();
+  State<_VehicleMakeScreen> createState() => _VehicleMakeScreenState();
 }
 
-class _MakePickerDialogState extends State<_MakePickerDialog> {
-  late final TextEditingController _searchController;
-  List<String> _filteredMakes = [];
-
+class _VehicleMakeScreenState extends State<_VehicleMakeScreen> {
+  String _makeSearchQuery = '';
+  final List<String> _allMakes = CarMakes.getAll();
+  
+  List<String> get _filteredMakes {
+    if (_makeSearchQuery.isEmpty) {
+      return _allMakes;
+    }
+    final query = _makeSearchQuery.toLowerCase();
+    return _allMakes.where((make) => make.toLowerCase().contains(query)).toList();
+  }
+  
   @override
   void initState() {
     super.initState();
-    _searchController = TextEditingController();
-    _filteredMakes = widget.makes;
   }
 
-  @override
-  void dispose() {
-    _searchController.dispose();
-    super.dispose();
-  }
-
-  void _filterMakes(String query) {
-    setState(() {
-      if (query.isEmpty) {
-        _filteredMakes = widget.makes;
-      } else {
-        _filteredMakes = widget.makes
-            .where((make) => make.toLowerCase().contains(query.toLowerCase()))
-            .toList();
-      }
-    });
+  void _confirm() async {
+    final make = widget.makeController.text.trim();
+    
+    if (make.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please select a manufacturer'),
+          duration: Duration(seconds: 2),
+        ),
+      );
+      return;
+    }
+    
+    final result = await widget.onConfirm(make);
+    if (mounted) {
+      Navigator.pop(context, result);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    return Dialog(
-      child: Container(
-        width: double.maxFinite,
-        constraints: const BoxConstraints(maxHeight: 600),
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Text(
-              'Select Vehicle Make',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: _searchController,
-              decoration: InputDecoration(
-                hintText: 'Search...',
-                prefixIcon: const Icon(Icons.search),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              ),
-              onChanged: _filterMakes,
-            ),
-            const SizedBox(height: 16),
-            Expanded(
-              child: _filteredMakes.isEmpty
-                  ? const Center(
-                      child: Text(
-                        'No results found',
-                        style: TextStyle(color: Colors.white54),
+    return Scaffold(
+      backgroundColor: const Color(0xFF1C1F2A),
+      appBar: AppBar(
+        backgroundColor: const Color(0xFF9B59B6),
+        foregroundColor: Colors.white,
+        elevation: 0,
+        title: const Text(
+          'Select Vehicle Information',
+          style: TextStyle(
+            fontSize: 22,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        leading: IconButton(
+          icon: const Icon(Icons.close),
+          onPressed: () => Navigator.pop(context),
+        ),
+      ),
+      body: Column(
+        children: [
+          // Content
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Select vehicle manufacturer:',
+                    style: TextStyle(color: Colors.white70, fontSize: 16),
+                  ),
+                  const SizedBox(height: 16),
+                  // Search bar
+                  TextField(
+                    style: const TextStyle(color: Colors.white, fontSize: 16),
+                    decoration: InputDecoration(
+                      hintText: 'Search manufacturer...',
+                      hintStyle: const TextStyle(color: Colors.white38),
+                      prefixIcon: const Icon(Icons.search, color: Colors.white54),
+                      filled: true,
+                      fillColor: Colors.white.withValues(alpha: 0.1),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.2)),
                       ),
-                    )
-                  : ListView.builder(
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.2)),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: const BorderSide(color: Color(0xFF9B59B6), width: 2),
+                      ),
+                    ),
+                    onChanged: (value) {
+                      setState(() {
+                        _makeSearchQuery = value;
+                      });
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  // List of all makes
+                  Expanded(
+                    child: ListView.builder(
                       itemCount: _filteredMakes.length,
                       itemBuilder: (context, index) {
                         final make = _filteredMakes[index];
-                        final isSelected = make == widget.selectedMake;
-                        return ListTile(
-                          leading: Icon(
-                            Icons.directions_car,
-                            color: isSelected ? Colors.blueAccent : null,
-                          ),
-                          title: Text(
-                            make,
-                            style: TextStyle(
-                              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                              color: isSelected ? Colors.blueAccent : null,
+                        final isSelected = widget.makeController.text == make;
+                        return Container(
+                          margin: const EdgeInsets.only(bottom: 8),
+                          child: Material(
+                            color: Colors.transparent,
+                            child: InkWell(
+                              onTap: () {
+                                widget.makeController.text = make;
+                                setState(() {});
+                              },
+                              borderRadius: BorderRadius.circular(12),
+                              splashColor: const Color(0xFF9B59B6).withValues(alpha: 0.3),
+                              highlightColor: const Color(0xFF9B59B6).withValues(alpha: 0.1),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                                decoration: BoxDecoration(
+                                  color: isSelected
+                                      ? const Color(0xFF9B59B6).withValues(alpha: 0.2)
+                                      : Colors.white.withValues(alpha: 0.05),
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(
+                                    color: isSelected
+                                        ? const Color(0xFF9B59B6)
+                                        : Colors.white.withValues(alpha: 0.1),
+                                    width: isSelected ? 2 : 1,
+                                  ),
+                                ),
+                                child: Row(
+                                  children: [
+                                    Expanded(
+                                      child: Text(
+                                        make,
+                                        style: TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 16,
+                                          fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                                        ),
+                                      ),
+                                    ),
+                                    if (isSelected)
+                                      const Icon(Icons.check_circle, color: Color(0xFF9B59B6), size: 24),
+                                  ],
+                                ),
+                              ),
                             ),
                           ),
-                          selected: isSelected,
-                          onTap: () => Navigator.pop(context, make),
                         );
                       },
                     ),
+                  ),
+                ],
+              ),
             ),
-            const SizedBox(height: 8),
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Cancel'),
+          ),
+          
+          // Footer with buttons
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: const Color(0xFF1C1F2A),
+              border: Border(
+                top: BorderSide(
+                  color: Colors.white.withValues(alpha: 0.1),
+                  width: 1,
+                ),
+              ),
             ),
-          ],
-        ),
+            child: SafeArea(
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    style: TextButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                    ),
+                    child: const Text('Cancel', style: TextStyle(color: Colors.white70, fontSize: 16)),
+                  ),
+                  const SizedBox(width: 12),
+                  ElevatedButton(
+                    onPressed: widget.makeController.text.trim().isNotEmpty ? _confirm : null,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF9B59B6),
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 14),
+                      disabledBackgroundColor: const Color(0xFF9B59B6).withValues(alpha: 0.3),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: const Text('Confirm', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

@@ -142,6 +142,14 @@ class DemoObdLink implements ObdLink {
     if (cmd == '0162') return _m0162(); // Actual torque
     if (cmd == '0163') return _m0163(); // Reference torque
 
+    // Extended PIDs bitmap support (0120, 0140, 0160)
+    // 0120: PIDs supported [21-40] - bitmap with bits set for: 0121, 012E, 012F, 0130, 0131, 0133, 013C, 013D, 013E, 013F
+    if (cmd == '0120') return '41 20 01 60 04 F0'; // PIDs supported [21-40] - bitmap
+    // 0140: PIDs supported [41-60] - bitmap with most PIDs supported
+    if (cmd == '0140') return '41 40 FF FF FF FF'; // PIDs supported [41-60] - bitmap
+    // 0160: PIDs supported [61-80] - bitmap with bits set for: 0161, 0162, 0163
+    if (cmd == '0160') return '41 60 07 00 00 00'; // PIDs supported [61-80] - bitmap
+
     // Freeze Frame Mode 02 minimal set (replay some current values)
     if (cmd.startsWith('02')) return _mode02(cmd);
 
