@@ -124,7 +124,13 @@ class _ReadCodesScreenState extends State<ReadCodesScreen> with SingleTickerProv
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Read Codes'),
+        title: const Text(
+          'Read Codes',
+          style: TextStyle(
+            fontSize: 22,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
         backgroundColor: const Color(0xFF1E88E5), // Blue - matches Basic Diagnostics group
         foregroundColor: Colors.white,
         actions: [
@@ -146,74 +152,76 @@ class _ReadCodesScreenState extends State<ReadCodesScreen> with SingleTickerProv
           indicatorColor: Colors.white,
         ),
       ),
-      body: Column(
-        children: [
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-            color: Colors.white.withValues(alpha: 0.04),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text('MIL: ${_milOn ? 'ON' : 'OFF'}'),
-                Text('Stored count: $_count'),
-              ],
-            ),
-          ),
-          if (_errorMessage != null)
+      body: SafeArea(
+        child: Column(
+          children: [
             Container(
               width: double.infinity,
-              padding: const EdgeInsets.all(16),
-              margin: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.red.withValues(alpha: 0.2),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.redAccent, width: 1),
-              ),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              color: Colors.white.withValues(alpha: 0.04),
               child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Icon(Icons.error_outline, color: Colors.redAccent),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      _errorMessage!,
-                      style: const TextStyle(color: Colors.white),
-                    ),
-                  ),
+                  Text('MIL: ${_milOn ? 'ON' : 'OFF'}'),
+                  Text('Stored count: $_count'),
                 ],
               ),
             ),
-          Expanded(
-            child: _errorMessage != null && _client == null
-                ? Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
+            if (_errorMessage != null)
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(16),
+                margin: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.red.withValues(alpha: 0.2),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.redAccent, width: 1),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.error_outline, color: Colors.redAccent),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        _errorMessage!,
+                        style: const TextStyle(color: Colors.white),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            Expanded(
+              child: _errorMessage != null && _client == null
+                  ? Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(Icons.wifi_off, size: 64, color: Colors.white54),
+                          const SizedBox(height: 16),
+                          const Text(
+                            'Not connected',
+                            style: TextStyle(color: Colors.white70, fontSize: 18),
+                          ),
+                          const SizedBox(height: 8),
+                          const Text(
+                            'Please CONNECT before using this feature',
+                            style: TextStyle(color: Colors.white54, fontSize: 14),
+                            textAlign: TextAlign.center,
+                          ),
+                        ],
+                      ),
+                    )
+                  : TabBarView(
+                      controller: _tab,
                       children: [
-                        const Icon(Icons.wifi_off, size: 64, color: Colors.white54),
-                        const SizedBox(height: 16),
-                        const Text(
-                          'Not connected',
-                          style: TextStyle(color: Colors.white70, fontSize: 18),
-                        ),
-                        const SizedBox(height: 8),
-                        const Text(
-                          'Please CONNECT before using this feature',
-                          style: TextStyle(color: Colors.white54, fontSize: 14),
-                          textAlign: TextAlign.center,
-                        ),
+                        _buildList(_stored, 'Stored'),
+                        _buildList(_pending, 'Pending'),
+                        _buildList(_permanent, 'Permanent'),
                       ],
                     ),
-                  )
-                : TabBarView(
-                    controller: _tab,
-                    children: [
-                      _buildList(_stored, 'Stored'),
-                      _buildList(_pending, 'Pending'),
-                      _buildList(_permanent, 'Permanent'),
-                    ],
-                  ),
-          )
-        ],
+            )
+          ],
+        ),
       ),
     );
   }
