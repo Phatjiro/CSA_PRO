@@ -244,7 +244,8 @@ class _VehicleListContentState extends State<VehicleListContent> {
       onPressed: () async {
         final result = await Navigator.of(context).push<Vehicle?>(
           MaterialPageRoute(
-            builder: (_) => const VehicleFormScreen(),
+            builder: (_) => const VehicleFormScreen(isOnboarding: true),
+            fullscreenDialog: true,
           ),
         );
         if (result != null && mounted) {
@@ -271,7 +272,8 @@ class _VehicleListContentState extends State<VehicleListContent> {
               onPressed: () async {
                 final result = await Navigator.of(context).push<Vehicle?>(
                   MaterialPageRoute(
-                    builder: (_) => const VehicleFormScreen(),
+                    builder: (_) => const VehicleFormScreen(isOnboarding: true),
+                    fullscreenDialog: true,
                   ),
                 );
                 if (result != null && mounted) {

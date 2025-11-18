@@ -22,7 +22,7 @@ class _ConnectScreenState extends State<ConnectScreen> with SingleTickerProvider
   
   // TCP/IP fields
   final TextEditingController _hostController =
-      TextEditingController(text: '192.168.1.76');
+      TextEditingController(text: '192.168.0.10');
   final TextEditingController _portController =
       TextEditingController(text: '35000');
   
@@ -31,6 +31,8 @@ class _ConnectScreenState extends State<ConnectScreen> with SingleTickerProvider
   bool _scanning = false;
   BleScanResult? _selectedBleDevice;
   StreamSubscription<List<BleScanResult>>? _scanSub;
+  String? _lastBleDeviceId;
+  String? _lastBleDeviceName;
   
   // Common fields
   bool _connecting = false;
@@ -59,17 +61,26 @@ class _ConnectScreenState extends State<ConnectScreen> with SingleTickerProvider
     await VehicleService.init();
     final prefs = await SharedPreferences.getInstance();
     final vehicleId = prefs.getString(PrefsKeys.currentVehicleId);
+    Vehicle? vehicle;
     if (vehicleId != null) {
-      final vehicle = VehicleService.getById(vehicleId);
-      if (vehicle != null) {
-        setState(() => _selectedVehicle = vehicle);
-      }
-    } else {
-      final vehicles = VehicleService.all();
-      if (vehicles.isNotEmpty) {
-        setState(() => _selectedVehicle = vehicles.first);
-      }
+      vehicle = VehicleService.getById(vehicleId);
     }
+    vehicle ??= VehicleService.all().isNotEmpty ? VehicleService.all().first : null;
+
+    final savedHost = prefs.getString(PrefsKeys.lastTcpHost);
+    if (savedHost != null && savedHost.isNotEmpty) {
+      _hostController.text = savedHost;
+    }
+    final savedPort = prefs.getString(PrefsKeys.lastTcpPort);
+    if (savedPort != null && savedPort.isNotEmpty) {
+      _portController.text = savedPort;
+    }
+
+    setState(() {
+      _selectedVehicle = vehicle ?? _selectedVehicle;
+      _lastBleDeviceId = prefs.getString(PrefsKeys.lastBleDeviceId);
+      _lastBleDeviceName = prefs.getString(PrefsKeys.lastBleDeviceName);
+    });
   }
 
   Future<void> _scanBle() async {
@@ -107,6 +118,15 @@ class _ConnectScreenState extends State<ConnectScreen> with SingleTickerProvider
         if (mounted) {
           setState(() {
             _bleDevices = sorted;
+            if (_lastBleDeviceId != null) {
+              for (final device in sorted) {
+                if (device.deviceId == _lastBleDeviceId &&
+                    (_selectedBleDevice == null || _selectedBleDevice!.deviceId != device.deviceId)) {
+                  _selectedBleDevice = device;
+                  break;
+                }
+              }
+            }
           });
         }
       }, onError: (e) {
@@ -139,6 +159,13 @@ class _ConnectScreenState extends State<ConnectScreen> with SingleTickerProvider
       _error = null;
     });
     
+    // Show connecting dialog (đơn giản - chỉ vòng tròn xoay)
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => const _ConnectingDialog(),
+    );
+    
     try {
       await ConnectionManager.instance.connectTcp(
         host: _hostController.text.trim(),
@@ -148,18 +175,41 @@ class _ConnectScreenState extends State<ConnectScreen> with SingleTickerProvider
       
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString(PrefsKeys.currentVehicleId, _selectedVehicle!.id);
+      await prefs.setString(PrefsKeys.lastTcpHost, _hostController.text.trim());
+      await prefs.setString(PrefsKeys.lastTcpPort, _portController.text.trim());
       
       if (!mounted) return;
+      
+      // Close dialog ngay khi connect thành công
+      if (Navigator.of(context, rootNavigator: true).canPop()) {
+        Navigator.of(context, rootNavigator: true).pop();
+      }
+      
       setState(() {
         _connecting = false;
         _isConnected = true;
       });
+      
+      // Tự động scan sau khi connect thành công
+      await _startScan();
     } catch (e) {
       if (mounted) {
+        // Close dialog khi có lỗi
+        if (Navigator.of(context, rootNavigator: true).canPop()) {
+          Navigator.of(context, rootNavigator: true).pop();
+        }
         setState(() {
           _error = e.toString();
           _connecting = false;
         });
+        // Hiện SnackBar báo lỗi
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Connection failed: ${e.toString()}'),
+            backgroundColor: Colors.redAccent,
+            duration: const Duration(seconds: 3),
+          ),
+        );
       }
     }
   }
@@ -201,6 +251,13 @@ class _ConnectScreenState extends State<ConnectScreen> with SingleTickerProvider
       _error = null;
     });
     
+    // Show connecting dialog (đơn giản - chỉ vòng tròn xoay)
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => const _ConnectingDialog(),
+    );
+    
     try {
       await ConnectionManager.instance.connectBle(
         deviceId: _selectedBleDevice!.deviceId,
@@ -209,18 +266,46 @@ class _ConnectScreenState extends State<ConnectScreen> with SingleTickerProvider
       
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString(PrefsKeys.currentVehicleId, _selectedVehicle!.id);
+      await prefs.setString(PrefsKeys.lastBleDeviceId, _selectedBleDevice!.deviceId);
+      await prefs.setString(
+        PrefsKeys.lastBleDeviceName,
+        _selectedBleDevice!.displayName,
+      );
       
       if (!mounted) return;
+      
+      // Close dialog ngay khi connect thành công
+      if (Navigator.of(context, rootNavigator: true).canPop()) {
+        Navigator.of(context, rootNavigator: true).pop();
+      }
+      
       setState(() {
         _connecting = false;
         _isConnected = true;
+        _lastBleDeviceId = _selectedBleDevice!.deviceId;
+        _lastBleDeviceName = _selectedBleDevice!.displayName;
       });
+      
+      // Tự động scan sau khi connect thành công
+      await _startScan();
     } catch (e) {
       if (mounted) {
+        // Close dialog khi có lỗi
+        if (Navigator.of(context, rootNavigator: true).canPop()) {
+          Navigator.of(context, rootNavigator: true).pop();
+        }
         setState(() {
           _error = e.toString();
           _connecting = false;
         });
+        // Hiện SnackBar báo lỗi
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Connection failed: ${e.toString()}'),
+            backgroundColor: Colors.redAccent,
+            duration: const Duration(seconds: 3),
+          ),
+        );
       }
     }
   }
@@ -320,39 +405,47 @@ class _ConnectScreenState extends State<ConnectScreen> with SingleTickerProvider
               style: ElevatedButton.styleFrom(
                 backgroundColor: _isConnected 
                     ? const Color(0xFF2ECC71) 
-                    : Theme.of(context).primaryColor,
+                    : const Color(0xFF42A5F5),
                 foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 16),
+                padding: const EdgeInsets.symmetric(vertical: 18),
+                elevation: _isConnected ? 4 : 8,
+                shadowColor: _isConnected 
+                    ? const Color(0xFF2ECC71).withValues(alpha: 0.5)
+                    : const Color(0xFF42A5F5).withValues(alpha: 0.6),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ).copyWith(
+                backgroundColor: WidgetStateProperty.resolveWith((states) {
+                  if (states.contains(WidgetState.disabled)) {
+                    return Colors.grey;
+                  }
+                  if (_isConnected) {
+                    return const Color(0xFF2ECC71);
+                  }
+                  return const Color(0xFF42A5F5);
+                }),
               ),
-              child: _connecting
-                  ? const SizedBox(
-                      height: 20,
-                      width: 20,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                      ),
-                    )
-                  : _isScanning
-                      ? const Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                              ),
-                            ),
-                            SizedBox(width: 12),
-                            Text('SCANNING...', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
-                          ],
-                        )
-                      : Text(
-                          _isConnected ? 'SCAN' : 'CONNECT',
-                          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+              child: _isScanning
+                  ? const Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                          ),
                         ),
+                        SizedBox(width: 12),
+                        Text('SCANNING...', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+                      ],
+                    )
+                  : Text(
+                      _isConnected ? 'SCAN' : 'CONNECT',
+                      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700, letterSpacing: 1.2),
+                    ),
             ),
           ),
           if (_error != null) ...[
@@ -388,6 +481,30 @@ class _ConnectScreenState extends State<ConnectScreen> with SingleTickerProvider
               onVehicleSelected: (vehicle) {
                 setState(() => _selectedVehicle = vehicle);
               },
+            ),
+          ],
+          if (_lastBleDeviceName != null) ...[
+            const SizedBox(height: 12),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.05),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.history, size: 18, color: Colors.white70),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Last connected: $_lastBleDeviceName',
+                      style: const TextStyle(color: Colors.white70),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ],
           const SizedBox(height: 16),
@@ -456,39 +573,47 @@ class _ConnectScreenState extends State<ConnectScreen> with SingleTickerProvider
                     style: ElevatedButton.styleFrom(
                       backgroundColor: _isConnected 
                           ? const Color(0xFF2ECC71) 
-                          : Theme.of(context).primaryColor,
+                          : const Color(0xFF42A5F5),
                       foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      padding: const EdgeInsets.symmetric(vertical: 18),
+                      elevation: _isConnected ? 4 : 8,
+                      shadowColor: _isConnected 
+                          ? const Color(0xFF2ECC71).withValues(alpha: 0.5)
+                          : const Color(0xFF42A5F5).withValues(alpha: 0.6),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ).copyWith(
+                      backgroundColor: WidgetStateProperty.resolveWith((states) {
+                        if (states.contains(WidgetState.disabled)) {
+                          return Colors.grey;
+                        }
+                        if (_isConnected) {
+                          return const Color(0xFF2ECC71);
+                        }
+                        return const Color(0xFF42A5F5);
+                      }),
                     ),
-                    child: _connecting
-                        ? const SizedBox(
-                            height: 20,
-                            width: 20,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                            ),
-                          )
-                        : _isScanning
-                            ? const Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  SizedBox(
-                                    width: 20,
-                                    height: 20,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                                    ),
-                                  ),
-                                  SizedBox(width: 12),
-                                  Text('SCANNING...', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
-                                ],
-                              )
-                            : Text(
-                                _isConnected ? 'SCAN' : 'CONNECT',
-                                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                    child: _isScanning
+                        ? const Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                ),
                               ),
+                              SizedBox(width: 12),
+                              Text('SCANNING...', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+                            ],
+                          )
+                        : Text(
+                            _isConnected ? 'SCAN' : 'CONNECT',
+                            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700, letterSpacing: 1.2),
+                          ),
                   ),
                 ),
                 if (_error != null) ...[
@@ -554,4 +679,266 @@ class _ConnectScreenState extends State<ConnectScreen> with SingleTickerProvider
       },
     );
   }
+}
+
+// Connecting Dialog Widget
+class _ConnectingDialog extends StatefulWidget {
+  const _ConnectingDialog();
+
+  @override
+  State<_ConnectingDialog> createState() => _ConnectingDialogState();
+}
+
+class _ConnectingDialogState extends State<_ConnectingDialog> with TickerProviderStateMixin {
+  final List<_StepItem> _steps = [
+    _StepItem('Initializing connection...', Icons.power_settings_new),
+    _StepItem('Establishing link...', Icons.link),
+    _StepItem('Verifying connection...', Icons.verified),
+  ];
+
+  int _current = 0;
+  Timer? _timer;
+  late AnimationController _pulseController;
+  late AnimationController _indeterminateController;
+  late Animation<double> _pulseAnimation;
+  late Animation<double> _indeterminateAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    // Pulse animation for glow effect
+    _pulseController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1200),
+    )..repeat(reverse: true);
+    _pulseAnimation = Tween<double>(begin: 0.3, end: 0.6).animate(
+      CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
+    );
+    
+    // Indeterminate progress animation (chạy tới lui)
+    _indeterminateController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1500),
+    )..repeat(reverse: true);
+    _indeterminateAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _indeterminateController, curve: Curves.easeInOut),
+    );
+    
+    _runSequence();
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    _pulseController.dispose();
+    _indeterminateController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _runSequence() async {
+    // Cập nhật step text liên tục
+    const totalMs = 3000;
+    const tickMs = 16;
+    int elapsed = 0;
+    _timer?.cancel();
+    _timer = Timer.periodic(const Duration(milliseconds: tickMs), (t) {
+      elapsed += tickMs;
+      final p = (elapsed / totalMs).clamp(0.0, 1.0);
+      if (!mounted) return;
+      setState(() {
+        _current = (p * _steps.length).clamp(0, (_steps.length - 1).toDouble()).floor();
+      });
+      if (p >= 1.0) {
+        elapsed = 0; // Reset để lặp lại
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    const Color accent = Color(0xFF42A5F5);
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 420),
+        child: Material(
+          color: Colors.transparent,
+          child: Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  const Color(0xFF1C1F2A),
+                  const Color(0xFF1A1D28),
+                  const Color(0xFF1C1F2A),
+                ],
+              ),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: Colors.white.withValues(alpha: 0.5),
+                width: 1.5,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.5),
+                  blurRadius: 30,
+                  offset: const Offset(0, 15),
+                  spreadRadius: -5,
+                ),
+                BoxShadow(
+                  color: accent.withValues(alpha: 0.1),
+                  blurRadius: 20,
+                  offset: const Offset(0, 0),
+                ),
+              ],
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Header
+                Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          ShaderMask(
+                            shaderCallback: (bounds) => LinearGradient(
+                              colors: [
+                                Colors.white,
+                                Colors.white.withValues(alpha: 0.9),
+                              ],
+                            ).createShader(bounds),
+                            child: const Text(
+                              'Connecting',
+                              style: TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.w800,
+                                color: Colors.white,
+                                letterSpacing: 0.5,
+                                decoration: TextDecoration.none,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Row(
+                            children: [
+                              Icon(
+                                _steps[_current].icon,
+                                size: 16,
+                                color: accent,
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  _steps[_current].title,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.white,
+                                    letterSpacing: 0.3,
+                                    decoration: TextDecoration.none,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 24),
+                // Indeterminate progress bar (chạy tới lui)
+                LayoutBuilder(
+                  builder: (context, constraints) {
+                    final barWidth = constraints.maxWidth;
+                    return AnimatedBuilder(
+                      animation: Listenable.merge([_indeterminateAnimation, _pulseAnimation]),
+                      builder: (context, child) {
+                        // Tính toán vị trí của progress bar (chạy tới lui)
+                        final progressWidth = barWidth * 0.4;
+                        final minX = 0.0;
+                        final maxX = barWidth - progressWidth;
+                        final currentX = minX + (maxX - minX) * _indeterminateAnimation.value;
+                        
+                        return ClipRRect(
+                          borderRadius: BorderRadius.circular(10),
+                          child: Container(
+                            height: 10,
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.08),
+                              borderRadius: BorderRadius.circular(10),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withValues(alpha: 0.2),
+                                  blurRadius: 4,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ],
+                            ),
+                            child: Stack(
+                              children: [
+                                // Background
+                                Container(
+                                  width: double.infinity,
+                                  height: 10,
+                                  decoration: BoxDecoration(
+                                    color: Colors.white.withValues(alpha: 0.08),
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                ),
+                                // Indeterminate progress bar (chạy tới lui)
+                                Positioned(
+                                  left: currentX,
+                                  child: Container(
+                                    width: progressWidth,
+                                    height: 10,
+                                    decoration: BoxDecoration(
+                                      gradient: LinearGradient(
+                                        colors: [
+                                          accent,
+                                          const Color(0xFF1E88E5),
+                                          const Color(0xFF1976D2),
+                                          const Color(0xFF1565C0),
+                                        ],
+                                        begin: Alignment.centerLeft,
+                                        end: Alignment.centerRight,
+                                      ),
+                                      borderRadius: BorderRadius.circular(10),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: accent.withValues(alpha: _pulseAnimation.value),
+                                          blurRadius: 10,
+                                          spreadRadius: 1,
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
+                    );
+                  },
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _StepItem {
+  final String title;
+  final IconData icon;
+  const _StepItem(this.title, this.icon);
 }

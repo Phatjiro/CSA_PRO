@@ -1565,7 +1565,7 @@ class _VehicleMakeScreenState extends State<_VehicleMakeScreen> {
           
           // Footer with buttons
           Container(
-            padding: const EdgeInsets.all(20),
+            padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
             decoration: BoxDecoration(
               color: const Color(0xFF1C1F2A),
               border: Border(
@@ -1576,29 +1576,42 @@ class _VehicleMakeScreenState extends State<_VehicleMakeScreen> {
               ),
             ),
             child: SafeArea(
+              top: false,
               child: Row(
-                mainAxisAlignment: MainAxisAlignment.end,
                 children: [
-                  TextButton(
-                    onPressed: () => Navigator.pop(context),
-                    style: TextButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                    ),
-                    child: const Text('Cancel', style: TextStyle(color: Colors.white70, fontSize: 16)),
-                  ),
-                  const SizedBox(width: 12),
-                  ElevatedButton(
-                    onPressed: widget.makeController.text.trim().isNotEmpty ? _confirm : null,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF9B59B6),
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 14),
-                      disabledBackgroundColor: const Color(0xFF9B59B6).withValues(alpha: 0.3),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
+                  SizedBox(
+                    width: 110,
+                    child: OutlinedButton(
+                      onPressed: () => Navigator.pop(context),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: Colors.white,
+                        side: BorderSide(color: Colors.white.withValues(alpha: 0.4)),
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                      child: const Text(
+                        'Cancel',
+                        style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
                       ),
                     ),
-                    child: const Text('Confirm', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+                  ),
+                  const Spacer(),
+                  SizedBox(
+                    width: 140,
+                    child: ElevatedButton(
+                      onPressed: widget.makeController.text.trim().isNotEmpty ? _confirm : null,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF9B59B6),
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        disabledBackgroundColor: const Color(0xFF9B59B6).withValues(alpha: 0.3),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                      ),
+                      child: const Text('Confirm'),
+                    ),
                   ),
                 ],
               ),

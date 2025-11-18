@@ -4,7 +4,10 @@ import 'dart:io';
 import 'dart:math';
 import 'dart:typed_data';
 
+import 'package:flutter/foundation.dart';
+
 import '../models/obd_live_data.dart';
+import 'app_settings.dart';
 import 'obd_link.dart';
 
 /// Detailed MIL status including readiness monitors and distance metrics.
@@ -118,6 +121,7 @@ class ObdClient {
   final StreamController<ObdLiveData> _dataController =
       StreamController<ObdLiveData>.broadcast();
   Timer? _pollTimer;
+  VoidCallback? _pollIntervalListener;
   final StringBuffer _buffer = StringBuffer();
   Timer? _idleTimer;
   Completer<void>? _idleCompleter;
@@ -484,16 +488,22 @@ class ObdClient {
     await _writeCommand('ATH0'); // headers off
     await _writeCommand('ATSP0'); // auto protocol
 
-    // Start polling essential PIDs every 500ms (smoother than 250ms)
-    _pollTimer?.cancel();
-    _pollTimer = Timer.periodic(const Duration(milliseconds: 500), (_) async {
-      await _queryAndEmit();
-    });
+    _startPolling();
+    _pollIntervalListener ??= () {
+      if (_pollTimer != null) {
+        _startPolling();
+      }
+    };
+    AppSettings.pollIntervalMs.addListener(_pollIntervalListener!);
   }
 
   Future<void> disconnect() async {
     _pollTimer?.cancel();
     _pollTimer = null;
+    if (_pollIntervalListener != null) {
+      AppSettings.pollIntervalMs.removeListener(_pollIntervalListener!);
+      _pollIntervalListener = null;
+    }
     if (_link != null) {
       await _link!.disconnect();
     }
@@ -502,6 +512,15 @@ class ObdClient {
   }
 
   bool get isConnected => _link?.isConnected == true || _socket != null;
+
+  void _startPolling() {
+    final intervalMs = AppSettings.pollIntervalMs.value.clamp(300, 5000);
+    final duration = Duration(milliseconds: intervalMs);
+    _pollTimer?.cancel();
+    _pollTimer = Timer.periodic(duration, (_) async {
+      await _queryAndEmit();
+    });
+  }
 
   Future<void> _writeCommand(String cmd) async {
     if (_link != null) {

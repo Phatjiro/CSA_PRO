@@ -16,6 +16,7 @@ class _AccelerationTestsScreenState extends State<AccelerationTestsScreen> {
   late final ObdClient _client;
   StreamSubscription? _sub;
   int _currentSpeed = 0;
+  Set<String>? _previousEnabledPids;
 
   // Default test ranges
   final List<_AccelTest> _tests = [
@@ -35,6 +36,7 @@ class _AccelerationTestsScreenState extends State<AccelerationTestsScreen> {
   void initState() {
     super.initState();
     _client = ConnectionManager.instance.client!;
+    _applyMinimalPids();
     _sub = _client.dataStream.listen((data) {
       if (!mounted) return;
       final speed = data.vehicleSpeedKmh;
@@ -49,6 +51,7 @@ class _AccelerationTestsScreenState extends State<AccelerationTestsScreen> {
   @override
   void dispose() {
     _sub?.cancel();
+    _restorePreviousPids();
     super.dispose();
   }
 
@@ -99,6 +102,18 @@ class _AccelerationTestsScreenState extends State<AccelerationTestsScreen> {
         ),
       ),
     );
+  }
+
+  void _applyMinimalPids() {
+    _previousEnabledPids = Set<String>.from(_client.enabledPids);
+    final racingPids = <String>{'010D', '010C'};
+    _client.setEnabledPids(racingPids);
+    _client.pollNow();
+  }
+
+  void _restorePreviousPids() {
+    if (_previousEnabledPids == null) return;
+    _client.setEnabledPids(_previousEnabledPids!);
   }
 
   String _formatMs(int ms) {

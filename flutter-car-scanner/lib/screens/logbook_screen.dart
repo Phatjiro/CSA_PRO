@@ -56,13 +56,14 @@ class _LogbookScreenState extends State<LogbookScreen> {
                 final e = entries[index];
                 final type = (e['type'] ?? '').toString();
                 final ts = (e['ts'] ?? '').toString();
+                final formattedTs = _formatTimestamp(ts);
                 final subtitle = _subtitleFor(e);
                 final icon = _iconFor(type);
                 return ListTile(
                   leading: Icon(icon, color: Colors.white70),
                   title: Text(type),
                   subtitle: Text(subtitle, style: const TextStyle(color: Colors.white60)),
-                  trailing: Text(ts.split('T').join(' '), style: const TextStyle(fontSize: 12, color: Colors.white54)),
+                  trailing: Text(formattedTs, style: const TextStyle(fontSize: 12, color: Colors.white54)),
                 );
               },
             ),
@@ -132,6 +133,18 @@ class _LogbookScreenState extends State<LogbookScreen> {
       final s = v.replaceAll('"', '""');
       return '"$s"';
     }).join(',');
+  }
+
+  String _formatTimestamp(String raw) {
+    if (raw.isEmpty) return '';
+    final parsed = DateTime.tryParse(raw);
+    if (parsed == null) return raw.replaceFirst('T', ' ');
+    final y = parsed.year.toString().padLeft(4, '0');
+    final m = parsed.month.toString().padLeft(2, '0');
+    final d = parsed.day.toString().padLeft(2, '0');
+    final h = parsed.hour.toString().padLeft(2, '0');
+    final min = parsed.minute.toString().padLeft(2, '0');
+    return '$y-$m-$d $h:$min';
   }
 }
 

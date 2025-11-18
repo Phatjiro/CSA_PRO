@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
+import '../services/app_settings.dart';
+
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
 
@@ -144,6 +146,98 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
+  void _showPollIntervalSheet() {
+    final currentValue = AppSettings.pollIntervalMs.value;
+    showModalBottomSheet(
+      context: context,
+      showDragHandle: true,
+      isScrollControlled: true,
+      backgroundColor: const Color(0xFF1C1F2A),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (context) {
+        int tempValue = currentValue;
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            return SafeArea(
+              top: false,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'PID Polling Interval',
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                    const SizedBox(height: 8),
+                    const Text(
+                      'Adjust how often the app queries OBD-II data. Lower values update faster but may overload slow adapters.',
+                      style: TextStyle(fontSize: 13, color: Colors.white70),
+                    ),
+                    const SizedBox(height: 16),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: const [
+                        Text('300 ms'),
+                        Text('2000 ms'),
+                      ],
+                    ),
+                    Slider(
+                      value: tempValue.toDouble(),
+                      min: 300,
+                      max: 2000,
+                      divisions: 17,
+                      label: '$tempValue ms',
+                      onChanged: (v) {
+                        setModalState(() => tempValue = v.round());
+                      },
+                    ),
+                    Center(
+                      child: Text(
+                        '$tempValue ms',
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton(
+                            onPressed: () {
+                              setModalState(() => tempValue = AppSettings.defaultPollInterval);
+                            },
+                            child: const Text('Reset to default'),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: ElevatedButton(
+                            onPressed: () async {
+                              await AppSettings.setPollInterval(tempValue);
+                              if (context.mounted) Navigator.pop(context);
+                            },
+                            child: const Text('Save'),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -183,6 +277,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
             ),
             onTap: _showUpgradeDialog,
+          ),
+          const Divider(height: 1),
+
+          // Advanced Section
+          _SectionHeader(title: 'Advanced'),
+          ValueListenableBuilder<int>(
+            valueListenable: AppSettings.pollIntervalMs,
+            builder: (context, value, _) {
+              return _SettingsTile(
+                icon: Icons.speed,
+                title: 'PID Poll Interval',
+                subtitle: '$value ms',
+                trailing: const Icon(Icons.chevron_right),
+                onTap: _showPollIntervalSheet,
+              );
+            },
           ),
           const Divider(height: 1),
 

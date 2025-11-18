@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'connect_screen.dart';
 import 'dashboard_screen.dart';
 import '../services/connection_manager.dart';
+import '../services/vehicle_service.dart';
 import 'acceleration_tests_screen.dart';
 import 'emission_tests_screen.dart';
 import 'mode06_screen.dart';
@@ -28,6 +29,7 @@ import 'all_sensors_screen.dart';
 import '../models/vehicle.dart';
 import 'demo_init_screen.dart';
 import 'settings_screen.dart';
+import 'vehicle_form_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -37,6 +39,22 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  Future<void> _handleConnectTap() async {
+    await VehicleService.init();
+    if (VehicleService.all().isEmpty) {
+      await Navigator.of(context).push<Vehicle?>(
+        MaterialPageRoute(
+          builder: (_) => const VehicleFormScreen(isOnboarding: true),
+          fullscreenDialog: true,
+        ),
+      );
+      if (!mounted || VehicleService.all().isEmpty) return;
+    }
+    if (!mounted) return;
+    await Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => const ConnectScreen()),
+    );
+  }
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -153,7 +171,10 @@ class _HomeScreenState extends State<HomeScreen> {
                                 ),
                                 child: Row(
                                   children: [
-                                    _BigStatusButton(connected: connected),
+                                    _BigStatusButton(
+                                      connected: connected,
+                                      onConnectTap: _handleConnectTap,
+                                    ),
                                     const SizedBox(width: 20),
                                     Expanded(
                                       child: Column(
@@ -691,7 +712,8 @@ class _Group {
 // Big animated status button
 class _BigStatusButton extends StatefulWidget {
   final bool connected;
-  const _BigStatusButton({required this.connected});
+  final Future<void> Function()? onConnectTap;
+  const _BigStatusButton({required this.connected, this.onConnectTap});
 
   @override
   State<_BigStatusButton> createState() => _BigStatusButtonState();
@@ -758,11 +780,13 @@ class _BigStatusButtonState extends State<_BigStatusButton> with SingleTickerPro
             Transform.scale(
               scale: _scaleAnimation.value,
               child: GestureDetector(
-                onTap: isConnected ? null : () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(builder: (_) => const ConnectScreen()),
-                  );
-                },
+                onTap: isConnected
+                    ? null
+                    : () async {
+                        if (widget.onConnectTap != null) {
+                          await widget.onConnectTap!();
+                        }
+                      },
                 child: Container(
                   width: 120,
                   height: 120,

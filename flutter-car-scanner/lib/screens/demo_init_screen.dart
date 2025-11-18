@@ -28,10 +28,8 @@ class _DemoInitContentState extends State<_DemoInitContent> with TickerProviderS
   bool _showSuccess = false;
   late AnimationController _shimmerController;
   late AnimationController _pulseController;
-  late AnimationController _scaleController;
   late Animation<double> _shimmerAnimation;
   late Animation<double> _pulseAnimation;
-  late Animation<double> _scaleAnimation;
 
   @override
   void initState() {
@@ -54,16 +52,6 @@ class _DemoInitContentState extends State<_DemoInitContent> with TickerProviderS
       CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
     );
     
-    // Scale animation for success
-    _scaleController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 400),
-    );
-    _scaleAnimation = CurvedAnimation(
-      parent: _scaleController,
-      curve: Curves.elasticOut,
-    );
-    
     _runSequence();
   }
 
@@ -72,7 +60,6 @@ class _DemoInitContentState extends State<_DemoInitContent> with TickerProviderS
     _timer?.cancel();
     _shimmerController.dispose();
     _pulseController.dispose();
-    _scaleController.dispose();
     super.dispose();
   }
 
@@ -98,7 +85,6 @@ class _DemoInitContentState extends State<_DemoInitContent> with TickerProviderS
         await ConnectionManager.instance.connectDemo(vehicle: v);
         if (!mounted) return;
         setState(() { _done = true; _showSuccess = true; });
-        _scaleController.forward();
         await Future.delayed(const Duration(milliseconds: 800));
         if (!mounted) return;
         Navigator.of(context).pop();
@@ -115,45 +101,36 @@ class _DemoInitContentState extends State<_DemoInitContent> with TickerProviderS
       top: false,
       child: Padding(
         padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-        child: AnimatedBuilder(
-          animation: _scaleAnimation,
-          builder: (context, child) {
-            return Transform.scale(
-              scale: _showSuccess ? 1.0 + (_scaleAnimation.value * 0.05) : 1.0,
-              child: Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [
-                      const Color(0xFF1C1F2A),
-                      const Color(0xFF1A1D28),
-                      const Color(0xFF1C1F2A),
-                    ],
-                  ),
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(
-                    color: Colors.white.withValues(alpha: 0.5),
-                    width: 1.5,
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.5),
-                      blurRadius: 30,
-                      offset: const Offset(0, 15),
-                      spreadRadius: -5,
-                    ),
-                    BoxShadow(
-                      color: const Color(0xFF2196F3).withValues(alpha: 0.1),
-                      blurRadius: 20,
-                      offset: const Offset(0, 0),
-                    ),
-                  ],
-                ),
-                child: child,
+        child: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                const Color(0xFF1C1F2A),
+                const Color(0xFF1A1D28),
+                const Color(0xFF1C1F2A),
+              ],
+            ),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: Colors.white.withValues(alpha: 0.5),
+              width: 1.5,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.5),
+                blurRadius: 30,
+                offset: const Offset(0, 15),
+                spreadRadius: -5,
               ),
-            );
-          },
+              BoxShadow(
+                color: const Color(0xFF2196F3).withValues(alpha: 0.1),
+                blurRadius: 20,
+                offset: const Offset(0, 0),
+              ),
+            ],
+          ),
           child: Container(
             padding: const EdgeInsets.all(24),
             child: Column(

@@ -25,45 +25,44 @@ class _VehicleInfoScreenState extends State<VehicleInfoScreen> {
   Future<void> _fetch() async {
     setState(() { _loading = true; _error = null; _cfg = null; });
     try {
-      final client = ConnectionManager.instance.client;
+      final manager = ConnectionManager.instance;
+      final client = manager.client;
       if (client == null) {
         setState(() { _error = 'Not connected. Please CONNECT first.'; _loading = false; });
         return;
       }
       
-      // Detect connection type
-      final isLinkBased = client.host == 'link' && client.port == -1;
+      // Detect connection type from manager metadata
+      final mode = manager.mode;
       String connectionType = 'Unknown';
-      bool isDemo = false;
+      bool isDemo = mode == ConnectionMode.demo;
+      final bool isTcp = mode == ConnectionMode.tcp;
+      final String? tcpHost = manager.tcpHost ?? (client.host != 'link' ? client.host : null);
+      final int? tcpPort = manager.tcpPort ?? (client.port != -1 ? client.port : null);
       
-      if (isLinkBased) {
-        // Could be BLE or Demo - need to detect by testing ATI command
-        try {
-          final atiResponse = await client.requestPid('ATI');
-          // Demo typically returns just 'OK' or very short response
-          // Real ELM returns version string like "ELM327 v1.5" or similar
-          if (atiResponse.trim().toUpperCase() == 'OK' || 
-              atiResponse.trim().isEmpty ||
-              atiResponse.length < 5) {
-            isDemo = true;
-            connectionType = 'Demo Mode';
+      switch (mode) {
+        case ConnectionMode.tcp:
+          if (tcpHost != null && tcpPort != null) {
+            connectionType = 'TCP ($tcpHost:$tcpPort)';
           } else {
-            connectionType = 'BLE';
+            connectionType = 'TCP';
           }
-        } catch (_) {
-          // If ATI fails, assume demo for safety
-          isDemo = true;
+          break;
+        case ConnectionMode.ble:
+          connectionType = 'BLE';
+          break;
+        case ConnectionMode.demo:
           connectionType = 'Demo Mode';
-        }
-      } else {
-        // TCP connection - could be emulator or real device
-        connectionType = 'TCP (${client.host}:${client.port})';
+          break;
+        case ConnectionMode.none:
+          connectionType = 'Unknown';
+          break;
       }
       
       // Try emulator REST first (only for TCP connections)
-      if (!isLinkBased) {
+      if (isTcp && tcpHost != null) {
         try {
-          final url = Uri.parse('http://${client.host}:3000/api/config');
+          final url = Uri.parse('http://$tcpHost:3000/api/config');
           final res = await http.get(url).timeout(const Duration(seconds: 2));
           if (res.statusCode == 200) {
             final cfg = json.decode(res.body) as Map<String, dynamic>;
@@ -78,6 +77,7 @@ class _VehicleInfoScreenState extends State<VehicleInfoScreen> {
             }
             return;
           }
+          // If REST lookup succeeds we already returned
         } catch (_) {}
       }
 

@@ -52,7 +52,8 @@ class _VehiclePickerState extends State<VehiclePicker> {
       if (result == true && mounted) {
         final newVehicle = await Navigator.of(context).push<Vehicle?>(
           MaterialPageRoute(
-            builder: (_) => const VehicleFormScreen(),
+            builder: (_) => const VehicleFormScreen(isOnboarding: true),
+            fullscreenDialog: true,
           ),
         );
         if (newVehicle != null) {
@@ -116,7 +117,8 @@ class _VehiclePickerState extends State<VehiclePicker> {
       // User tapped "Add New", open form
       final newVehicle = await Navigator.of(context).push<Vehicle?>(
         MaterialPageRoute(
-          builder: (_) => const VehicleFormScreen(),
+          builder: (_) => const VehicleFormScreen(isOnboarding: true),
+          fullscreenDialog: true,
         ),
       );
       if (newVehicle != null) {
