@@ -3,6 +3,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
 import '../services/app_settings.dart';
+import '../services/tutorial_service.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -314,6 +315,24 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(content: Text('Help & FAQ coming soon')),
               );
+            },
+          ),
+          _SettingsTile(
+            icon: Icons.school_outlined,
+            title: 'Show Tutorial Again',
+            subtitle: 'Replay the app introduction',
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () async {
+              await TutorialService.resetTutorial();
+              if (mounted) {
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Tutorial reset. Restart the app to see it again.'),
+                    duration: Duration(seconds: 2),
+                  ),
+                );
+              }
             },
           ),
           const Divider(height: 1),

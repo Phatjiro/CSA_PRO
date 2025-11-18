@@ -5,7 +5,9 @@ import 'connect_screen.dart';
 import 'dashboard_screen.dart';
 import '../services/connection_manager.dart';
 import '../services/vehicle_service.dart';
+import '../services/tutorial_service.dart';
 import '../models/obd_live_data.dart';
+import '../widgets/tutorial_overlay.dart';
 import 'acceleration_tests_screen.dart';
 import 'emission_tests_screen.dart';
 import 'mode06_screen.dart';
@@ -41,6 +43,58 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  // Tutorial keys
+  final GlobalKey _connectButtonKey = GlobalKey();
+  final GlobalKey _vehicleStatusKey = GlobalKey();
+  int _tutorialStep = -1;
+  bool _showTutorial = false;
+  bool _tutorialInitialized = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _initTutorial();
+  }
+
+  Future<void> _initTutorial() async {
+    final completed = await TutorialService.isTutorialCompleted();
+    if (!completed && !_tutorialInitialized) {
+      _tutorialInitialized = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          setState(() {
+            _showTutorial = true;
+            _tutorialStep = 0;
+          });
+        }
+      });
+    }
+  }
+
+  void _nextTutorialStep() {
+    if (_tutorialStep < 2) {
+      setState(() {
+        _tutorialStep++;
+      });
+    } else {
+      _completeTutorial();
+    }
+  }
+
+  void _skipTutorial() {
+    _completeTutorial();
+  }
+
+  Future<void> _completeTutorial() async {
+    await TutorialService.completeTutorial();
+    if (mounted) {
+      setState(() {
+        _showTutorial = false;
+        _tutorialStep = -1;
+      });
+    }
+  }
+
   Future<void> _handleConnectTap() async {
     await VehicleService.init();
     if (VehicleService.all().isEmpty) {
@@ -85,9 +139,11 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ],
       ),
-      body: SafeArea(
-        child: Builder(
-          builder: (context) {
+      body: Stack(
+        children: [
+          SafeArea(
+            child: Builder(
+              builder: (context) {
             final groups = <_Group>[
                     _Group('Basic Diagnostics', const Color(0xFF1E88E5), Icons.health_and_safety, [
                       _MenuItem(Icons.bug_report, 'Read & Clear Codes', 'View and clear diagnostic trouble codes', _Action.openReadCodes),
@@ -174,6 +230,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                 child: Row(
                                   children: [
                                     _BigStatusButton(
+                                      key: _connectButtonKey,
                                       connected: connected,
                                       onConnectTap: _handleConnectTap,
                                     ),
@@ -384,7 +441,10 @@ class _HomeScreenState extends State<HomeScreen> {
                           }
                           
                           final data = snapshot.data!;
-                          return _BasicMetricsWidget(data: data);
+                          return _BasicMetricsWidget(
+                            key: _vehicleStatusKey,
+                            data: data,
+                          );
                         },
                       );
                     },
@@ -396,6 +456,65 @@ class _HomeScreenState extends State<HomeScreen> {
           },
         ),
       ),
+          // Tutorial Overlay
+          if (_showTutorial && _tutorialStep >= 0)
+            _buildTutorialOverlay(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTutorialOverlay() {
+    GlobalKey targetKey;
+    String title;
+    String description;
+    bool isLastStep;
+    String? primaryActionLabel;
+    VoidCallback? primaryAction;
+
+    switch (_tutorialStep) {
+      case 0:
+        targetKey = _connectButtonKey;
+        title = 'Welcome to Car Scanner!';
+        description = 'Tap "TAP TO CONNECT" to hook up your OBD-II adapter. No hardware yet? Try the Demo Mode first to explore the app safely.';
+        isLastStep = false;
+        primaryActionLabel = 'Try Demo Mode';
+        primaryAction = () {
+          _skipTutorial();
+          showDemoInitDialog(context);
+        };
+        break;
+      case 1:
+        targetKey = _vehicleStatusKey;
+        title = 'Vehicle Status';
+        description = 'Once connected, the live stats card keeps an eye on RPM, speed, coolant temp, throttle, fuel level, and voltage in real time.';
+        isLastStep = false;
+        break;
+      case 2:
+        targetKey = _connectButtonKey;
+        title = 'Explore the Tools';
+        description = 'Scroll down to launch Read Codes, Live Data, Security Scan, AI Mechanic, and more. You\'re ready to diagnose!';
+        isLastStep = true;
+        break;
+      default:
+        return const SizedBox.shrink();
+    }
+
+    return TutorialOverlay(
+      targetKey: targetKey,
+      title: title,
+      description: description,
+      onNext: () {
+        if (isLastStep) {
+          _completeTutorial();
+        } else {
+          _nextTutorialStep();
+        }
+      },
+      onSkip: _skipTutorial,
+      isLastStep: isLastStep,
+      primaryActionLabel: primaryActionLabel,
+      onPrimaryAction: primaryAction,
     );
   }
 }
@@ -776,7 +895,7 @@ class _Group {
 class _BigStatusButton extends StatefulWidget {
   final bool connected;
   final Future<void> Function()? onConnectTap;
-  const _BigStatusButton({required this.connected, this.onConnectTap});
+  const _BigStatusButton({super.key, required this.connected, this.onConnectTap});
 
   @override
   State<_BigStatusButton> createState() => _BigStatusButtonState();
@@ -896,7 +1015,7 @@ class _BigStatusButtonState extends State<_BigStatusButton> with SingleTickerPro
 class _BasicMetricsWidget extends StatelessWidget {
   final ObdLiveData data;
   
-  const _BasicMetricsWidget({required this.data});
+  const _BasicMetricsWidget({super.key, required this.data});
 
   @override
   Widget build(BuildContext context) {

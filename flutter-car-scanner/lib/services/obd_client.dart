@@ -8,6 +8,7 @@ import 'package:flutter/foundation.dart';
 
 import '../models/obd_live_data.dart';
 import 'app_settings.dart';
+import 'log_service.dart';
 import 'obd_link.dart';
 
 /// Detailed MIL status including readiness monitors and distance metrics.
@@ -590,6 +591,7 @@ class ObdClient {
         text = text.substring(0, lastGt);
       }
       final result = text.replaceAll('>', '').trim();
+      _logRawFrame(cmd, result);
       completer.complete(result);
       return result;
     } catch (e) {
@@ -599,6 +601,27 @@ class ObdClient {
       _pendingRequest = null;
     }
   }
+
+  static const Set<String> _trackedRawCommands = {'03', '04', '07', '0A', '0101'};
+
+  void _logRawFrame(String command, String response) {
+    final normalized = _normalizeCommand(command);
+    if (!_trackedRawCommands.contains(normalized)) return;
+    final payload = response.trim();
+    if (payload.isEmpty) return;
+    try {
+      unawaited(LogService.add({
+        'type': 'raw_obd_frame',
+        'command': normalized,
+        'payload': payload,
+      }));
+    } catch (_) {
+      // Logging should never break communication.
+    }
+  }
+
+  String _normalizeCommand(String command) =>
+      command.replaceAll(RegExp(r'\s+'), '').toUpperCase();
 
   Future<void> _queryAndEmit() async {
     try {
