@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'dart:async';
 
 import 'connect_screen.dart';
 import 'dashboard_screen.dart';
 import '../services/connection_manager.dart';
 import '../services/vehicle_service.dart';
+import '../models/obd_live_data.dart';
 import 'acceleration_tests_screen.dart';
 import 'emission_tests_screen.dart';
 import 'mode06_screen.dart';
@@ -322,6 +324,67 @@ class _HomeScreenState extends State<HomeScreen> {
                                 ),
                             ],
                           );
+                        },
+                      );
+                    },
+                  ),
+                  // Basic Vehicle Metrics (only when connected)
+                  ValueListenableBuilder<bool>(
+                    valueListenable: ConnectionManager.instance.isConnected,
+                    builder: (context, connected, _) {
+                      if (!connected) return const SizedBox.shrink();
+                      final client = ConnectionManager.instance.client;
+                      if (client == null) return const SizedBox.shrink();
+                      
+                      // Enable PIDs needed for basic metrics
+                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                        client.setEnabledPids({
+                          '010C', // RPM
+                          '010D', // Speed
+                          '0105', // Coolant Temp
+                          '0111', // Throttle Position
+                          '012F', // Fuel Level
+                          '0142', // Control Module Voltage
+                        });
+                      });
+                      
+                      return StreamBuilder<ObdLiveData>(
+                        stream: client.dataStream,
+                        builder: (context, snapshot) {
+                          if (!snapshot.hasData) {
+                            return Container(
+                              margin: const EdgeInsets.only(bottom: 16),
+                              padding: const EdgeInsets.all(20),
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(16),
+                                gradient: LinearGradient(
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                  colors: [
+                                    const Color(0xFF42A5F5).withValues(alpha: 0.15),
+                                    const Color(0xFF42A5F5).withValues(alpha: 0.05),
+                                  ],
+                                ),
+                                border: Border.all(color: Colors.white.withValues(alpha: 0.08), width: 1),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withValues(alpha: 0.25),
+                                    blurRadius: 16,
+                                    offset: const Offset(0, 8),
+                                  ),
+                                ],
+                              ),
+                              child: const Center(
+                                child: Padding(
+                                  padding: EdgeInsets.all(20),
+                                  child: CircularProgressIndicator(),
+                                ),
+                              ),
+                            );
+                          }
+                          
+                          final data = snapshot.data!;
+                          return _BasicMetricsWidget(data: data);
                         },
                       );
                     },
@@ -825,6 +888,227 @@ class _BigStatusButtonState extends State<_BigStatusButton> with SingleTickerPro
           ],
         );
       },
+    );
+  }
+}
+
+// Basic Vehicle Metrics Widget
+class _BasicMetricsWidget extends StatelessWidget {
+  final ObdLiveData data;
+  
+  const _BasicMetricsWidget({required this.data});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            const Color(0xFF42A5F5).withValues(alpha: 0.15),
+            const Color(0xFF42A5F5).withValues(alpha: 0.05),
+          ],
+        ),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.08), width: 1),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.25),
+            blurRadius: 16,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Header (same style as section groups)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 0, vertical: 6),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      'Vehicle Status',
+                      style: TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.w900,
+                        color: Colors.white,
+                        letterSpacing: 0.3,
+                        height: 1.2,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 8),
+            // Metrics Grid (3 columns x 2 rows)
+            Row(
+              children: [
+                Expanded(
+                  child: _MetricCard(
+                    icon: Icons.speed,
+                    label: 'RPM',
+                    value: '${data.engineRpm}',
+                    unit: '',
+                    color: Colors.blueAccent,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _MetricCard(
+                    icon: Icons.directions_car,
+                    label: 'Speed',
+                    value: '${data.vehicleSpeedKmh}',
+                    unit: ' km/h',
+                    color: Colors.greenAccent,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _MetricCard(
+                    icon: Icons.thermostat,
+                    label: 'Coolant',
+                    value: '${data.coolantTempC}',
+                    unit: '°C',
+                    color: Colors.orangeAccent,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  child: _MetricCard(
+                    icon: Icons.trending_up,
+                    label: 'Throttle',
+                    value: '${data.throttlePositionPercent}',
+                    unit: '%',
+                    color: Colors.purpleAccent,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _MetricCard(
+                    icon: Icons.local_gas_station,
+                    label: 'Fuel',
+                    value: '${data.fuelLevelPercent}',
+                    unit: '%',
+                    color: Colors.yellowAccent,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _MetricCard(
+                    icon: Icons.battery_charging_full,
+                    label: 'Voltage',
+                    value: data.voltageV.toStringAsFixed(1),
+                    unit: ' V',
+                    color: Colors.cyanAccent,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _MetricCard extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final String value;
+  final String unit;
+  final Color color;
+
+  const _MetricCard({
+    required this.icon,
+    required this.label,
+    required this.value,
+    required this.unit,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Colors.white.withValues(alpha: 0.08),
+            Colors.white.withValues(alpha: 0.03),
+          ],
+        ),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.1), width: 1),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(icon, size: 18, color: color),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: Colors.white.withValues(alpha: 0.7),
+                    fontWeight: FontWeight.w500,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Flexible(
+                child: Text(
+                  value,
+                  style: const TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w800,
+                    color: Colors.white,
+                    height: 1.0,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              if (unit.isNotEmpty) ...[
+                const SizedBox(width: 2),
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 2),
+                  child: Text(
+                    unit,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.white.withValues(alpha: 0.6),
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ],
+      ),
     );
   }
 }
